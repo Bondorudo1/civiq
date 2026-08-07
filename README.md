@@ -1,56 +1,147 @@
-# Welcome to your Expo app 👋
+# CiviQ
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A civic participation app for **Cahul, Moldova**. Residents follow what the
+primărie is deciding, comment on public consultations, and file complaints they
+can actually track. Operators at the primărie work the other side of the same
+loop from a built-in admin panel.
 
-## Get started
+Mobile client only — this repo has no server. It talks to the CiviQ API
+(contract **Rev 3**) and ships with a full in-memory mock, so it runs and demos
+without a backend.
 
-1. Install dependencies
+> **Backend developers: read [BACKEND.md](BACKEND.md).** It has the two switches
+> to point this at your API, the complete list of endpoints the client calls,
+> the outstanding change requests, and answers to the open questions at the end
+> of the Rev 3 contract.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Run it
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+No backend or `.env` needed — it starts on mock data. Press `a` for Android,
+`w` for web, or scan the QR with Expo Go.
 
-### Other setup steps
+### Demo accounts
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Any password works; the mock only reads the email.
 
-## Learn more
+| Role | Email | What you get |
+|---|---|---|
+| Resident | `ion@exemplu.md` | The citizen app, starting **unverified** |
+| Primărie | `primaria@cahul.md` | The admin panel (any email containing `admin` or `primărie`) |
 
-To learn more about developing your project with Expo, look at the following resources:
+### The loop worth walking
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+It's the whole product in four steps, and it crosses both apps:
 
-## Join the community
+1. As a resident, file a complaint → it appears in **Sesizări** with a reference.
+2. Sign out, sign in as `primaria@cahul.md` → the shell changes entirely. Open
+   the complaint from the queue, set **Rezolvată**, write the explanation.
+3. Sign back in as the resident → the bell has a badge; tapping it opens that
+   complaint with the official response attached.
+4. Try to comment on a project → you're blocked until the primărie approves your
+   verification request (**Locuitori** tab on the admin side).
 
-Join our community of developers creating universal apps.
+---
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Two apps, one binary
+
+Role decides which shell mounts — a resident never sees admin navigation and an
+operator never sees the citizen app. The split happens in
+[`src/app/_layout.tsx`](src/app/_layout.tsx) via two mutually exclusive
+`Stack.Protected` branches, keyed on the role persisted at sign-in.
+
+```
+src/app/
+  (tabs)/          resident   Acasă · Proiecte · Sesizări · Profil
+  (admin)/         primărie   Sesizări · Proiecte · Anunțuri · Locuitori · Cont
+  admin/…          admin detail screens (respond, edit post, review)
+  project/[id]     consultation: reactions, threaded comments, AI summary
+  complaint/…      file one, track one
+  ask              AI assistant over the primărie's knowledge base
+  verify           resident verification request
+  login, register
+```
+
+---
+
+## How data flows
+
+One direction, one swap point. A screen never knows whether it's talking to a
+real server.
+
+```
+types.ts     the contract, shared by both implementations
+    ↓
+client.ts    fetch: bearer token, snake_case ⇄ camelCase, error envelope, multipart
+live.ts      real endpoints          mock-data.ts + service.ts   in-memory
+    ↓                                        ↓
+service.ts   export const api = USE_MOCK ? mockApi : liveApi
+    ↓
+hooks.ts     TanStack Query — every screen goes through these
+    ↓
+src/app/…    screens
+```
+
+`liveApi` is **typed against `mockApi`**, so the two can't drift: if the real
+implementation stops matching what screens call, it fails to compile rather than
+at runtime.
+
+**Switching to a live backend** is `USE_MOCK = false` in
+[`src/api/service.ts`](src/api/service.ts) plus `EXPO_PUBLIC_API_URL` in `.env`
+(copy `.env.example`). Nothing else changes.
+
+---
+
+## Domain rules the client encodes
+
+Worth knowing if you're changing behaviour — most of these mirror server rules,
+and a few are UI-only.
+
+- **Participation is gated.** Anyone may register and read. Commenting, reacting
+  and filing a complaint unlock only after the primărie *approves* a
+  verification request — submitting one is not enough. Gated controls stay
+  visible and explain themselves rather than disappearing.
+  *Not in Rev 3 — see BACKEND.md §3.1. The server must enforce this too.*
+- **30 days to answer.** Complaints show a countdown against the response
+  window; the admin queue leads with how many are overdue.
+- **Closing owes an explanation.** A complaint moving to Rezolvată/Respinsă
+  requires `admin_response`; a consultation can't close without a verdict.
+  Status changes notify the author, text-only edits don't.
+- **Closed consultations refuse comments** (`409 POST_CLOSED`), so the composer
+  is replaced rather than left to fail.
+- **Official replies look official.** The city answering under its own
+  consultation renders as a sealed nameplate, inferred from
+  `comment.author.id === post.author.id` — the contract has no author role yet.
+- **AI is synchronous and can be down.** Every AI call shows a spinner and
+  treats `503 AI_UNAVAILABLE` as a soft, retryable state with the button still
+  live.
+
+---
+
+## Stack
+
+Expo SDK 57 · React Native 0.86 · React 19 · expo-router (typed routes,
+file-based) · TanStack Query for server state · Zustand + AsyncStorage for auth ·
+Reanimated 4 · TypeScript throughout.
+
+Design language and product decisions live in [PRODUCT.md](PRODUCT.md) and
+[PLAN.md](PLAN.md). UI text is Romanian.
+
+## Checks
+
+```bash
+npx tsc --noEmit
+```
+
+```bash
+npx expo export --platform android
+```
+
+Both must exit 0. The export catches bundler and native-resolution problems that
+typechecking alone misses.
