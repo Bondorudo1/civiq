@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { usePosts } from '@/api/hooks';
@@ -65,25 +65,30 @@ export default function ProiecteScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-        {isLoading ? (
-          <LoadingView label="Se încarcă proiectele…" />
-        ) : isError ? (
-          <ErrorView onRetry={() => refetch()} />
-        ) : list.length === 0 ? (
-          <EmptyState
-            icon="file-tray-outline"
-            title="Niciun proiect"
-            message={query || filter !== 'ALL' ? 'Nimic pentru filtrul ales.' : 'Nu există proiecte deocamdată.'}
-          />
-        ) : (
-          list.map((post, i) => (
-            <Animated.View key={post.id} entering={FadeInDown.duration(360).delay(i * 60)}>
-              <ProjectCard post={post} onPress={() => router.push({ pathname: '/project/[id]', params: { id: post.id } })} />
-            </Animated.View>
-          ))
+      <FlatList
+        data={list}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item, index }) => (
+          <Animated.View entering={FadeInDown.duration(360).delay(index * 60)}>
+            <ProjectCard post={item} onPress={() => router.push({ pathname: '/project/[id]', params: { id: item.id } })} />
+          </Animated.View>
         )}
-      </ScrollView>
+        ListEmptyComponent={
+          isLoading ? (
+            <LoadingView label="Se încarcă proiectele…" />
+          ) : isError ? (
+            <ErrorView onRetry={() => refetch()} />
+          ) : (
+            <EmptyState
+              icon="file-tray-outline"
+              title="Niciun proiect"
+              message={query || filter !== 'ALL' ? 'Nimic pentru filtrul ales.' : 'Nu există proiecte deocamdată.'}
+            />
+          )
+        }
+      />
     </View>
   );
 }

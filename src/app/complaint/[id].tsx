@@ -9,10 +9,11 @@ import { Plaque } from '@/components/ui/plaque';
 import { StatusPill } from '@/components/ui/status-pill';
 import { EmptyState, LoadingView } from '@/components/ui/state-views';
 import { Tag } from '@/components/ui/tag';
-import { COMPLAINT_CATEGORY } from '@/constants/civic';
+import { COMPLAINT_CATEGORY, DEPARTMENT } from '@/constants/civic';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDate } from '@/lib/date';
+import { shortRef } from '@/lib/id';
 
 type Step = { label: string; date: string | null; done: boolean; current?: boolean; color: string };
 
@@ -63,6 +64,7 @@ export default function ComplaintDetailScreen() {
         <View style={styles.bar}>
           <Ionicons name="arrow-back" size={24} color={c.onBrand} onPress={() => router.back()} />
           <Text style={[styles.barTitle, { color: c.onBrand }]}>Sesizare</Text>
+          <Text style={styles.barRef}>{shortRef(cm.id)}</Text>
         </View>
       </SafeAreaView>
 
@@ -73,6 +75,10 @@ export default function ComplaintDetailScreen() {
         </View>
 
         <Text style={[styles.title, { color: c.text }]}>{cm?.title}</Text>
+        <View style={styles.deptRow}>
+          <Ionicons name="business-outline" size={15} color={c.brand} />
+          <Text style={[styles.dept, { color: c.text }]}>Responsabil: {DEPARTMENT[cm.category]}</Text>
+        </View>
         <Text style={[styles.text, { color: c.textSecondary }]}>{cm?.description}</Text>
 
         {cm?.photoUrl ? <Image source={{ uri: cm.photoUrl }} style={styles.photo} contentFit="cover" /> : null}
@@ -119,6 +125,9 @@ export default function ComplaintDetailScreen() {
 const styles = StyleSheet.create({
   bar: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingHorizontal: Spacing.three, paddingVertical: 12 },
   barTitle: { fontFamily: Fonts.semibold, fontSize: 18, letterSpacing: -0.2 },
+  barRef: { fontFamily: Fonts.mono, fontSize: 13, color: '#CFE9EF', marginLeft: 'auto' },
+  deptRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  dept: { fontFamily: Fonts.medium, fontSize: 13.5 },
   content: { padding: Spacing.four, gap: Spacing.two, paddingBottom: Spacing.six },
   metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontFamily: Fonts.bold, fontSize: 22, lineHeight: 28, letterSpacing: -0.4, marginTop: Spacing.one },
@@ -134,7 +143,7 @@ const styles = StyleSheet.create({
   rail: { width: 2, flex: 1, minHeight: 24, marginVertical: 2 },
   stepBody: { flex: 1, paddingBottom: Spacing.three },
   stepLabel: { fontFamily: Fonts.semibold, fontSize: 14 },
-  stepDate: { fontFamily: Fonts.medium, fontSize: 12, marginTop: 2 },
+  stepDate: { fontFamily: Fonts.mono, fontSize: 12, marginTop: 2 },
   response: { marginTop: Spacing.three, gap: Spacing.two },
   responseHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   responseLabel: { fontFamily: Fonts.semibold, fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.4 },

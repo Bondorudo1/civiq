@@ -20,3 +20,14 @@ export function deadlineLabel(iso?: string): string | null {
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('ro-MD', { day: 'numeric', month: 'long' });
 }
+
+/** Short mono-friendly date, e.g. "12 iul". */
+export function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('ro-MD', { day: 'numeric', month: 'short' });
+}
+
+/** 30-day response window from submission (elapsed / remaining). */
+export function responseWindow(createdAt: string, total = 30): { remaining: number; elapsed: number; total: number } {
+  const elapsed = Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000));
+  return { remaining: Math.max(0, total - elapsed), elapsed, total };
+}

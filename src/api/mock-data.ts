@@ -20,6 +20,16 @@ export const mockUser: User = {
   createdAt: '2026-07-01T09:00:00Z',
 };
 
+/** The primărie operator. Real login returns whichever user the token belongs to. */
+export const mockAdmin: User = {
+  id: 'a1',
+  email: 'primaria@cahul.md',
+  fullName: 'Primăria Cahul',
+  role: 'ADMIN',
+  locale: 'ro',
+  createdAt: '2026-06-01T09:00:00Z',
+};
+
 export const mockPosts: Post[] = [
   {
     id: 'p1',
@@ -92,6 +102,20 @@ export const mockPosts: Post[] = [
 
 export const mockComments: Record<string, Comment[]> = {
   p1: [
+    {
+      id: 'c0',
+      postId: 'p1',
+      parentId: null,
+      author: primaria,
+      text: 'Mulțumim pentru propuneri. Consultarea rămâne deschisă până pe 20 august, iar traseul final va fi aprobat în ședința Consiliului local.',
+      canDelete: false,
+      likesCount: 12,
+      dislikesCount: 0,
+      myReaction: null,
+      repliesCount: 0,
+      createdAt: '2026-08-03T09:00:00Z',
+      replies: [],
+    },
     {
       id: 'c1',
       postId: 'p1',

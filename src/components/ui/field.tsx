@@ -1,9 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { type ComponentProps, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-native';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+
+// react-native-web draws the browser's default focus outline on the <input> itself
+// (text area only). We indicate focus via the wrapper's brand ring, so kill this.
+const noWebOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 
 type Props = TextInputProps & {
   label?: string;
@@ -30,6 +34,7 @@ export function Field({ label, icon, secure, style, onFocus, onBlur, ...input }:
         <TextInput
           {...input}
           secureTextEntry={secure && !show}
+          underlineColorAndroid="transparent"
           placeholderTextColor={c.textSecondary}
           onFocus={(e) => {
             setFocused(true);
@@ -39,7 +44,7 @@ export function Field({ label, icon, secure, style, onFocus, onBlur, ...input }:
             setFocused(false);
             onBlur?.(e);
           }}
-          style={[styles.input, { color: c.text }, style]}
+          style={[styles.input, { color: c.text }, noWebOutline, style]}
         />
         {secure ? (
           <Pressable onPress={() => setShow((v) => !v)} hitSlop={10}>

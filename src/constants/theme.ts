@@ -61,7 +61,8 @@ export const Fonts = {
   medium: 'Rubik_500Medium',
   semibold: 'Rubik_600SemiBold',
   bold: 'Rubik_700Bold',
-  mono: Platform.select({ ios: 'ui-monospace', android: 'monospace', default: 'monospace' }) as string,
+  // Monospace — IBM Plex Mono, for registry numbers + dates (civic-registry feel).
+  mono: 'IBMPlexMono_500Medium',
 };
 
 /**

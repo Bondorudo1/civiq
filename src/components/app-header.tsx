@@ -20,7 +20,7 @@ export function AppHeader({ title, showLogo, onBell }: { title: string; showLogo
         <View style={styles.left}>
           {showLogo && (
             <View style={styles.mark}>
-              <Logo width={32} height={32} />
+              <Logo width={30} height={30} />
             </View>
           )}
           <Text style={[styles.title, { color: c.onBrand }]} numberOfLines={1}>
@@ -53,12 +53,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.three,
     paddingVertical: 12,
+    minHeight: 64,
   },
   left: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   mark: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',

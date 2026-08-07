@@ -16,7 +16,10 @@ export interface User {
   createdAt: string;
 }
 
-/** Author sub-object as returned by the API ({ id, full_name }). */
+/**
+ * Author sub-object exactly as the API returns it ({ id, full_name }) — no role
+ * and no title. Officials are identified by matching the post's own author id.
+ */
 export interface Author {
   id: string;
   fullName: string;
@@ -61,6 +64,46 @@ export interface Comment {
   repliesCount: number;
   replies: Comment[];
   createdAt: string;
+}
+
+// --- AI service (separate container; every call can answer 503 AI_UNAVAILABLE) ---
+
+/** Languages the translator accepts; `gag` is Gagauz. */
+export type AiLanguage = 'ru' | 'ro' | 'en' | 'gag';
+
+export interface Translation {
+  language: AiLanguage;
+  title: string;
+  body: string;
+  /** false = just computed, true = served from the backend cache. */
+  cached: boolean;
+}
+
+export interface CommentsSummary {
+  summary: string;
+  /** How many comments (replies included) the summary covers. */
+  basedOn: number;
+  cached: boolean;
+}
+
+export interface AskAnswer {
+  explain: string;
+  /** Sources the answer leaned on; may be empty. */
+  links: string[];
+}
+
+/** Shape returned by both react endpoints. */
+export interface ReactionResult {
+  myReaction: ReactionKind | null;
+  likesCount: number;
+  dislikesCount: number;
+}
+
+/** The unified error envelope; `fields` is filled only for VALIDATION_ERROR. */
+export interface ApiError {
+  code: string;
+  message: string;
+  fields?: Record<string, string> | null;
 }
 
 export type ComplaintCategory =

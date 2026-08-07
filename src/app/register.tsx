@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Logo from '@/assets/images/logo.svg';
@@ -23,12 +23,15 @@ export default function RegisterScreen() {
 
   const back = () => (step === 0 ? router.back() : setStep((s) => s - 1));
   const next = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
-  const finish = () => signIn('dev-token');
+  // POST /auth/register always issues role CITIZEN.
+  const finish = () => signIn('dev-token', 'CITIZEN');
 
   const progress = (step + 1) / TOTAL_STEPS;
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.background }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: c.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.bar}>
           <Pressable onPress={back} hitSlop={12} accessibilityRole="button" accessibilityLabel="Înapoi">
@@ -156,7 +159,7 @@ export default function RegisterScreen() {
           )}
         </View>
       </SafeAreaView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

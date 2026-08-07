@@ -93,7 +93,7 @@ export default function HomeScreen() {
         </Animated.View>
         <Animated.View entering={FadeInDown.duration(400).delay(180)} style={styles.qaRow}>
           <QuickAction icon="alert-circle-outline" label={'Sesizările\nmele'} bg={c.amberWash} fg={c.amber} onPress={() => router.push('/contact')} />
-          <QuickAction icon="call-outline" label={'Contacte\nprimărie'} bg={c.greenWash} fg={c.green} onPress={() => router.push('/profil')} />
+          <QuickAction icon="sparkles-outline" label={'Întreabă\nprimăria'} bg={c.greenWash} fg={c.green} onPress={() => router.push('/ask')} />
         </Animated.View>
 
         <Animated.View entering={FadeInDown.duration(400).delay(240)} style={{ marginTop: Spacing.two }}>

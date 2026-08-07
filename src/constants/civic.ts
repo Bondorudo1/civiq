@@ -33,6 +33,18 @@ export const COMPLAINT_CATEGORY: Record<ComplaintCategory, ComplaintMeta> = {
   OTHER: { label: 'Altele', bg: '#EEF1F2', fg: '#4A5A60', icon: 'ellipsis-horizontal', needsLocation: false },
 };
 
+/** Responsible department, derived from complaint category (frontend mapping). */
+export const DEPARTMENT: Record<ComplaintCategory, string> = {
+  ROADS: 'Drumuri',
+  LIGHTING: 'Iluminat public',
+  WATER: 'Apă-Canal',
+  GARBAGE: 'Salubrizare',
+  TRANSPORT: 'Transport',
+  LANDSCAPING: 'Amenajare',
+  BUILDINGS: 'Urbanism',
+  OTHER: 'Primărie',
+};
+
 export const COMPLAINT_STATUS: Record<ComplaintStatus, { label: string; color: string; bg: string }> = {
   NEW: { label: 'Nou', color: '#0E7490', bg: '#EAF6F8' },
   IN_PROGRESS: { label: 'În lucru', color: '#8A5300', bg: '#FBEFD9' },

@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Logo from '@/assets/images/logo.svg';
@@ -23,10 +23,13 @@ export default function LoginScreen() {
   const [pwFocus, setPwFocus] = useState(false);
   const [locale, setLocale] = useState<'ro' | 'ru'>('ro');
 
-  const submit = () => signIn('dev-token');
+  // Mock stand-in for AuthResponse.user.role: the real login reads it off the response.
+  const submit = () => signIn('dev-token', /admin|prim[aă]ri/i.test(email) ? 'ADMIN' : 'CITIZEN');
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.background }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: c.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.hero}>
         <Image
           source={require('@/assets/images/auth-hands.png')}
@@ -123,7 +126,7 @@ export default function LoginScreen() {
           </Link>
         </View>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

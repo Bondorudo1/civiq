@@ -3,10 +3,11 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { useMe } from '@/api/hooks';
+import { useMe, useUpdateMe } from '@/api/hooks';
 import type { Locale } from '@/api/types';
 import { AppHeader } from '@/components/app-header';
 import { Button } from '@/components/ui/button';
+import { Field } from '@/components/ui/field';
 import { Plaque } from '@/components/ui/plaque';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -28,7 +29,22 @@ export default function ProfilScreen() {
   const router = useRouter();
   const { data: me } = useMe();
   const signOut = useAuth((s) => s.signOut);
-  const [locale, setLocale] = useState<Locale>(me?.locale ?? 'ro');
+  const updateMe = useUpdateMe();
+
+  // PATCH /api/me takes either field on its own.
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState('');
+  const locale = me?.locale ?? 'ro';
+
+  const startEdit = () => {
+    setName(me?.fullName ?? '');
+    setEditing(true);
+  };
+  const saveName = () => {
+    const trimmed = name.trim();
+    if (trimmed.length < 2 || trimmed.length > 120) return;
+    updateMe.mutate({ fullName: trimmed }, { onSuccess: () => setEditing(false) });
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
@@ -47,7 +63,37 @@ export default function ProfilScreen() {
               {me?.email ?? ''}
             </Text>
           </View>
+          {!editing ? (
+            <Pressable onPress={startEdit} hitSlop={10} accessibilityRole="button" accessibilityLabel="Editează numele">
+              <Ionicons name="create-outline" size={20} color={c.brand} />
+            </Pressable>
+          ) : null}
         </Plaque>
+
+        {editing ? (
+          <Plaque style={styles.edit}>
+            <Field
+              label="Nume complet"
+              icon="person-outline"
+              value={name}
+              onChangeText={setName}
+              maxLength={120}
+              placeholder="Numele tău"
+            />
+            <View style={styles.editBtns}>
+              <View style={{ flex: 1 }}>
+                <Button title="Anulează" variant="secondary" onPress={() => setEditing(false)} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button
+                  title={updateMe.isPending ? 'Se salvează…' : 'Salvează'}
+                  onPress={saveName}
+                  disabled={name.trim().length < 2 || updateMe.isPending}
+                />
+              </View>
+            </View>
+          </Plaque>
+        ) : null}
 
         <Text style={[styles.label, { color: c.textSecondary }]}>Limbă</Text>
         <View style={styles.langRow}>
@@ -56,7 +102,7 @@ export default function ProfilScreen() {
             return (
               <Pressable
                 key={l}
-                onPress={() => setLocale(l)}
+                onPress={() => updateMe.mutate({ locale: l })}
                 style={[styles.lang, { borderColor: active ? c.brand : c.line, backgroundColor: active ? c.brandWash : c.surface }]}>
                 <Text style={{ fontFamily: Fonts.semibold, fontSize: 14, color: active ? c.brand : c.text }}>
                   {l === 'ro' ? 'Română' : 'Русский'}
@@ -85,6 +131,8 @@ const styles = StyleSheet.create({
   name: { fontFamily: Fonts.semibold, fontSize: 17 },
   email: { fontFamily: Fonts.regular, fontSize: 13.5, marginTop: 2 },
   label: { fontFamily: Fonts.medium, fontSize: 12.5, letterSpacing: 0.3, marginTop: Spacing.two },
+  edit: { gap: Spacing.three },
+  editBtns: { flexDirection: 'row', gap: Spacing.two },
   langRow: { gap: Spacing.two },
   lang: {
     flexDirection: 'row',

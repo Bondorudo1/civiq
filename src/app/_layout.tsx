@@ -1,3 +1,4 @@
+import { IBMPlexMono_500Medium } from '@expo-google-fonts/ibm-plex-mono';
 import {
   Rubik_400Regular,
   Rubik_500Medium,
@@ -39,9 +40,11 @@ export default function RootLayout() {
     Rubik_500Medium,
     Rubik_600SemiBold,
     Rubik_700Bold,
+    IBMPlexMono_500Medium,
   });
 
   const token = useAuth((s) => s.token);
+  const role = useAuth((s) => s.role);
   const hydrated = useAuth((s) => s.hydrated);
   const hydrate = useAuth((s) => s.hydrate);
 
@@ -60,22 +63,36 @@ export default function RootLayout() {
   }
 
   const isAuthed = !!token;
+  const isAdmin = role === 'ADMIN';
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <SafeAreaProvider>
         <ThemeProvider value={CiviqLight}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Protected guard={isAuthed}>
-              <Stack.Screen name="(tabs)" />
+          {/* Drilling into a detail slides in from the right (it lives "inside" the list).
+              Crossing the auth boundary fades — it's a change of context, not of depth. */}
+          <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+            {/* The primărie panel is a separate shell, not a section of the citizen app. */}
+            <Stack.Protected guard={isAuthed && isAdmin}>
+              <Stack.Screen name="(admin)" options={{ animation: 'fade' }} />
+              <Stack.Screen name="admin/complaint/[id]" />
+              <Stack.Screen name="admin/post/new" options={{ animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="admin/post/[id]" />
+              <Stack.Screen name="admin/notification/new" options={{ animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="admin/notification/[id]" />
+            </Stack.Protected>
+            <Stack.Protected guard={isAuthed && !isAdmin}>
+              <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
               <Stack.Screen name="notifications" />
+              <Stack.Screen name="ask" />
               <Stack.Screen name="project/[id]" />
-              <Stack.Screen name="complaint/new" />
+              {/* Composing a complaint rises from the bottom: a task, not a destination. */}
+              <Stack.Screen name="complaint/new" options={{ animation: 'slide_from_bottom' }} />
               <Stack.Screen name="complaint/[id]" />
             </Stack.Protected>
             <Stack.Protected guard={!isAuthed}>
-              <Stack.Screen name="login" />
+              <Stack.Screen name="login" options={{ animation: 'fade' }} />
               <Stack.Screen name="register" />
             </Stack.Protected>
           </Stack>

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { type ComponentProps } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
+import { WaterTexture } from '@/components/water-texture';
 import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -35,7 +36,12 @@ export function EmptyState({
   const c = useTheme();
   return (
     <View style={styles.center}>
-      <Ionicons name={icon} size={44} color={c.line} />
+      <View style={styles.iconWrap}>
+        <View style={styles.iconRipple} pointerEvents="none">
+          <WaterTexture width={150} height={110} color={c.brandBright} />
+        </View>
+        <Ionicons name={icon} size={40} color={c.brand} />
+      </View>
       <Text style={[styles.title, { color: c.text }]}>{title}</Text>
       {message ? <Text style={[styles.msg, { color: c.textSecondary }]}>{message}</Text> : null}
       {actionLabel && onAction ? (
@@ -72,6 +78,17 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.six,
     paddingHorizontal: Spacing.four,
     gap: Spacing.two,
+  },
+  iconWrap: { width: 150, height: 110, alignItems: 'center', justifyContent: 'center' },
+  iconRipple: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0.55,
   },
   title: { fontFamily: Fonts.semibold, fontSize: 16, textAlign: 'center', marginTop: Spacing.one },
   msg: { fontFamily: Fonts.regular, fontSize: 14, textAlign: 'center', lineHeight: 20 },
