@@ -1,4 +1,4 @@
-import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
+import { StyleSheet, Text, type TextProps } from 'react-native';
 
 import { Fonts, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -30,44 +30,14 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
   );
 }
 
+// Rubik weights are distinct font families (not fontWeight); each variant sets its own.
 const styles = StyleSheet.create({
-  small: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 500,
-  },
-  smallBold: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 700,
-  },
-  default: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: 500,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: 600,
-    lineHeight: 52,
-  },
-  subtitle: {
-    fontSize: 32,
-    lineHeight: 44,
-    fontWeight: 600,
-  },
-  link: {
-    lineHeight: 30,
-    fontSize: 14,
-  },
-  linkPrimary: {
-    lineHeight: 30,
-    fontSize: 14,
-    color: '#3c87f7',
-  },
-  code: {
-    fontFamily: Fonts.mono,
-    fontWeight: Platform.select({ android: 700 }) ?? 500,
-    fontSize: 12,
-  },
+  default: { fontFamily: Fonts.regular, fontSize: 15, lineHeight: 22 },
+  small: { fontFamily: Fonts.medium, fontSize: 13, lineHeight: 18 },
+  smallBold: { fontFamily: Fonts.bold, fontSize: 13, lineHeight: 18 },
+  title: { fontFamily: Fonts.semibold, fontSize: 28, lineHeight: 34 },
+  subtitle: { fontFamily: Fonts.semibold, fontSize: 20, lineHeight: 26 },
+  link: { fontFamily: Fonts.medium, fontSize: 14, lineHeight: 22 },
+  linkPrimary: { fontFamily: Fonts.semibold, fontSize: 14, lineHeight: 22, color: '#0E7490' },
+  code: { fontFamily: Fonts.mono, fontSize: 12, lineHeight: 18 },
 });

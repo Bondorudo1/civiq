@@ -1,6 +1,7 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * CiviQ design tokens — "Nufăr Alb" / Enamel Civic (see PLAN.md §4, §12).
+ * Cool lake-water base + lily-pad green + one coral petal accent.
+ * Light theme only (dark theme intentionally not supported).
  */
 
 import '@/global.css';
@@ -9,47 +10,80 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-  },
-  dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    // Compat keys consumed by themed-text / themed-view
+    text: '#12303A', // ink-900
+    textSecondary: '#5A7078', // ink-500
+    background: '#F5F9FA', // app bg (barely-teal white)
+    backgroundElement: '#FFFFFF', // surface / plaque
+    backgroundSelected: '#EAF6F8', // water-wash (selected row)
+
+    // Brand — lake water
+    brand: '#0E7490',
+    brandDeep: '#0B4F5A',
+    brandBright: '#22A5BD',
+    brandWash: '#EAF6F8',
+    onBrand: '#FFFFFF',
+
+    // Accent — coral petal (the single action/live accent)
+    accent: '#F2637A',
+    accentPressed: '#D94E66',
+    accentWash: '#FDECEF',
+    onAccent: '#12303A',
+
+    // Support — lily pad
+    green: '#2E7D5B',
+    greenWash: '#E7F3EC',
+    amber: '#B26A00',
+    amberWash: '#FBEFD9',
+
+    surface: '#FFFFFF',
+    line: '#DCE6E9',
+    muted: '#8A909B',
+
+    // Enamel color-code for complaint status
+    statusNew: '#0E7490',
+    statusProgress: '#B26A00',
+    statusResolved: '#2E7D5B',
+    statusRejected: '#C0453B',
+
+    gold: '#E0A400', // flower center (logo only)
   },
 } as const;
 
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+export type ThemeColor = keyof typeof Colors.light;
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+/**
+ * Rubik — rounded grotesk with full Cyrillic + Romanian diacritics. Weights are
+ * distinct font families (not `fontWeight`), loaded in the root layout.
+ */
+export const Fonts = {
+  regular: 'Rubik_400Regular',
+  medium: 'Rubik_500Medium',
+  semibold: 'Rubik_600SemiBold',
+  bold: 'Rubik_700Bold',
+  mono: Platform.select({ ios: 'ui-monospace', android: 'monospace', default: 'monospace' }) as string,
+};
+
+/**
+ * Type scale — deliberate role steps (size + weight + tracking + leading) so
+ * hierarchy is unmistakable, not size-alone. Rubik weights are distinct families.
+ */
+export const Type = {
+  display: { fontFamily: 'Rubik_700Bold', fontSize: 30, lineHeight: 34, letterSpacing: -0.6 },
+  headline: { fontFamily: 'Rubik_700Bold', fontSize: 22, lineHeight: 28, letterSpacing: -0.4 },
+  title: { fontFamily: 'Rubik_600SemiBold', fontSize: 18, lineHeight: 24, letterSpacing: -0.2 },
+  cardTitle: { fontFamily: 'Rubik_600SemiBold', fontSize: 16, lineHeight: 21, letterSpacing: -0.2 },
+  body: { fontFamily: 'Rubik_400Regular', fontSize: 15, lineHeight: 22 },
+  label: { fontFamily: 'Rubik_500Medium', fontSize: 13, lineHeight: 18, letterSpacing: 0.2 },
+  caption: { fontFamily: 'Rubik_500Medium', fontSize: 12, lineHeight: 16 },
+  overline: {
+    fontFamily: 'Rubik_600SemiBold',
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 1.3,
+    textTransform: 'uppercase' as const,
   },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
-  },
-});
+} as const;
 
 export const Spacing = {
   half: 2,
@@ -59,6 +93,15 @@ export const Spacing = {
   four: 24,
   five: 32,
   six: 64,
+} as const;
+
+/** Enamel-plaque corner language. */
+export const Radius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  pill: 999,
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;

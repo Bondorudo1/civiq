@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "voice-native",
-    "slug": "voice-native",
+    "name": "CiviQ",
+    "slug": "civiq",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "voicenative",
-    "userInterfaceStyle": "automatic",
+    "scheme": "civiq",
+    "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/expo.icon"
     },
@@ -28,11 +28,12 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#0E7490",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,
