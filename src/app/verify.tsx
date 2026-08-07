@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { enter } from '@/lib/motion';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -65,7 +66,7 @@ export default function VerifyScreen() {
             <View style={styles.motif} pointerEvents="none">
               <WaterTexture width={220} height={190} color="#22A5BD" />
             </View>
-            <Animated.View entering={ZoomIn.duration(420)} style={[styles.badge, { backgroundColor: c.amber }]}>
+            <Animated.View entering={enter(ZoomIn.duration(420))} style={[styles.badge, { backgroundColor: c.amber }]}>
               <Ionicons name="hourglass-outline" size={38} color="#FFFFFF" />
             </Animated.View>
           </View>

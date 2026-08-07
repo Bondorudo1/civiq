@@ -132,6 +132,7 @@ export default function NotificationsScreen() {
       <FlatList
         data={list}
         keyExtractor={(item) => item.id}
+        style={styles.listFlex}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         renderItem={({ item: n }) => {
@@ -197,7 +198,8 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   bar: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingHorizontal: Spacing.three, paddingVertical: 12 },
-  tabsWrap: { flexGrow: 0 },
+  tabsWrap: { flexGrow: 0, flexShrink: 0 },
+  listFlex: { flex: 1 },
   tabs: { gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.three },
   tab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   markAll: { marginLeft: 'auto' },

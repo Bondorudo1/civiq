@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { enter } from '@/lib/motion';
 import { useState } from 'react';
-import { Alert, FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { useAdminDecideVerification, useAdminVerifications } from '@/api/hooks';
@@ -8,6 +9,7 @@ import type { VerificationRequest } from '@/api/types';
 import { AdminHeader } from '@/components/admin-header';
 import { Plaque } from '@/components/ui/plaque';
 import { EmptyState, ErrorView, LoadingView } from '@/components/ui/state-views';
+import { confirmAction } from '@/lib/confirm';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useLocale, useT } from '@/i18n';
@@ -29,14 +31,13 @@ function RequestCard({ item }: { item: VerificationRequest }) {
   const tone = item.status === 'VERIFIED' ? c.green : item.status === 'REJECTED' ? c.accentPressed : c.amber;
 
   const approve = () =>
-    Alert.alert(
-      t.approveTitle,
-      t.approveBody(item.user.fullName),
-      [
-        { text: t.cancel, style: 'cancel' },
-        { text: t.approve, onPress: () => decide.mutate({ id: item.id, status: 'VERIFIED' }) },
-      ],
-    );
+    confirmAction({
+      title: t.approveTitle,
+      message: t.approveBody(item.user.fullName),
+      confirmLabel: t.approve,
+      cancelLabel: t.cancel,
+      onConfirm: () => decide.mutate({ id: item.id, status: 'VERIFIED' }),
+    });
 
   return (
     <Plaque borderColor={pending ? undefined : tone}>
@@ -155,10 +156,11 @@ export default function AdminResidentsScreen() {
       <FlatList
         data={list}
         keyExtractor={(item) => item.id}
+        style={styles.listFlex}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.duration(320).delay(index * 50)}>
+          <Animated.View entering={enter(FadeInDown.duration(320).delay(index * 50))}>
             <RequestCard item={item} />
           </Animated.View>
         )}
@@ -181,7 +183,8 @@ export default function AdminResidentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  filterRow: { flexDirection: 'row', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.three },
+  filterRow: { flexDirection: 'row', flexShrink: 0, gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.three },
+  listFlex: { flex: 1 },
   tab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   list: { padding: Spacing.three, paddingTop: 0, gap: Spacing.three, paddingBottom: Spacing.six },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two, marginBottom: Spacing.two },

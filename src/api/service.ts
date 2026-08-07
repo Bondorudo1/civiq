@@ -151,8 +151,9 @@ const mockApi = {
     status: 'VERIFIED' | 'REJECTED',
     reason?: string,
   ): Promise<VerificationRequest> => {
-    const target = mockVerifications.find((v) => v.id === id);
-    if (!target) return Promise.reject({ code: 'NOT_FOUND', message: 'Cererea nu există.' });
+    const idx = mockVerifications.findIndex((v) => v.id === id);
+    if (idx < 0) return Promise.reject({ code: 'NOT_FOUND', message: 'Cererea nu există.' });
+    const target = mockVerifications[idx];
     if (status === 'REJECTED' && !reason?.trim()) {
       return Promise.reject({
         code: 'VALIDATION_ERROR',
@@ -160,8 +161,10 @@ const mockApi = {
         fields: { reason: 'Explică de ce cererea a fost respinsă.' },
       });
     }
-    target.status = status;
-    target.reason = reason?.trim() || null;
+    // Replace the element with a new object (don't mutate in place): React Query's
+    // structural sharing only re-renders the still-mounted queue on a changed ref.
+    const updated = { ...target, status, reason: reason?.trim() || null };
+    mockVerifications[idx] = updated;
     if (target.user.id === mockUser.id) mockUser.verification = status;
 
     mockNotifications.unshift({
@@ -172,13 +175,13 @@ const mockApi = {
       body:
         status === 'VERIFIED'
           ? 'Poți acum să comentezi, să reacționezi și să depui sesizări.'
-          : (target.reason ?? 'Verifică datele introduse și încearcă din nou.'),
+          : (updated.reason ?? 'Verifică datele introduse și încearcă din nou.'),
       payload: null,
       eventDate: null,
       isRead: false,
       createdAt: new Date().toISOString(),
     });
-    return delay({ ...target }, 350);
+    return delay(updated, 350);
   },
 
   /** PATCH /api/me — both fields optional. */

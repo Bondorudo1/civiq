@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { enter } from '@/lib/motion';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -75,7 +76,7 @@ export default function ProiecteScreen() {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.duration(360).delay(index * 60)}>
+          <Animated.View entering={enter(FadeInDown.duration(360).delay(index * 60))}>
             <ProjectCard post={item} onPress={() => router.push({ pathname: '/project/[id]', params: { id: item.id } })} />
           </Animated.View>
         )}

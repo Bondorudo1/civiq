@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { enter } from '@/lib/motion';
 import { useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -83,6 +84,7 @@ export default function AdminQueueScreen() {
       <FlatList
         data={list}
         keyExtractor={(item) => item.id}
+        style={styles.listFlex}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         renderItem={({ item, index }) => {
@@ -90,7 +92,7 @@ export default function AdminQueueScreen() {
           const w = open ? responseWindow(item.createdAt) : null;
           const late = !!w && w.remaining <= 0;
           return (
-            <Animated.View entering={FadeInDown.duration(320).delay(index * 50)}>
+            <Animated.View entering={enter(FadeInDown.duration(320).delay(index * 50))}>
               <Plaque
                 borderColor={late ? c.accent : undefined}
                 onPress={() => router.push({ pathname: '/admin/complaint/[id]', params: { id: item.id } })}>
@@ -140,8 +142,10 @@ const styles = StyleSheet.create({
   statNum: { fontFamily: Fonts.mono, fontSize: 18, color: '#FFFFFF' },
   statAlarm: { color: '#FFB3C0' },
   statLabel: { fontFamily: Fonts.regular, fontSize: 10.5, color: '#9FD3DF' },
-  tabsWrap: { flexGrow: 0 },
+  // flexGrow:0 stops it growing; flexShrink:0 stops a tall list squeezing it behind the cards.
+  tabsWrap: { flexGrow: 0, flexShrink: 0 },
   tabs: { gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.three },
+  listFlex: { flex: 1 },
   tab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   list: { padding: Spacing.three, paddingTop: 0, gap: Spacing.three, paddingBottom: Spacing.six },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.two },

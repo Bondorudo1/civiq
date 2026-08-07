@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -21,6 +21,7 @@ import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useLocale, useT } from '@/i18n';
 import { adminDetailText } from '@/i18n/adminDetail';
+import { confirmAction } from '@/lib/confirm';
 import { formatDate } from '@/lib/date';
 
 const TYPES = Object.keys(POST_TYPE) as PostType[];
@@ -87,18 +88,18 @@ export default function AdminEditPostScreen() {
   };
 
   const confirmDelete = () => {
-    Alert.alert(t.deletePostTitle, t.deletePostBody, [
-      { text: t.cancel, style: 'cancel' },
-      {
-        text: t.delete,
-        style: 'destructive',
-        onPress: () =>
-          remove.mutate(post.id, {
-            onSuccess: () => router.back(),
-            onError: (e) => fail(e, t.deletePostFailed),
-          }),
-      },
-    ]);
+    confirmAction({
+      title: t.deletePostTitle,
+      message: t.deletePostBody,
+      confirmLabel: t.delete,
+      cancelLabel: t.cancel,
+      destructive: true,
+      onConfirm: () =>
+        remove.mutate(post.id, {
+          onSuccess: () => router.back(),
+          onError: (e) => fail(e, t.deletePostFailed),
+        }),
+    });
   };
 
   return (

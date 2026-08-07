@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { enter } from '@/lib/motion';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -77,12 +78,13 @@ export default function ContactScreen() {
       <FlatList
         data={list}
         keyExtractor={(item) => item.id}
+        style={styles.listFlex}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         renderItem={({ item: cm, index }) => {
           const w = cm.status === 'IN_PROGRESS' ? responseWindow(cm.createdAt) : null;
           return (
-            <Animated.View entering={FadeInDown.duration(360).delay(index * 60)}>
+            <Animated.View entering={enter(FadeInDown.duration(360).delay(index * 60))}>
               <Plaque onPress={() => router.push({ pathname: '/complaint/[id]', params: { id: cm.id } })}>
                 <View style={styles.cardTop}>
                   <Text style={[styles.ref, { color: c.muted }]}>{shortRef(cm.id)}</Text>
@@ -138,7 +140,8 @@ export default function ContactScreen() {
 }
 
 const styles = StyleSheet.create({
-  tabsWrap: { flexGrow: 0 },
+  tabsWrap: { flexGrow: 0, flexShrink: 0 },
+  listFlex: { flex: 1 },
   tabs: { gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.three },
   tab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   list: { padding: Spacing.three, paddingTop: 0, gap: Spacing.three, paddingBottom: 96 },

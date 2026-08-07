@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { enter } from '@/lib/motion';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
@@ -90,7 +91,7 @@ export default function NewComplaintScreen() {
               <View style={styles.successMotif} pointerEvents="none">
                 <WaterTexture width={220} height={200} color="#22A5BD" />
               </View>
-              <Animated.View entering={ZoomIn.duration(420)} style={[styles.check, { backgroundColor: c.brand }]}>
+              <Animated.View entering={enter(ZoomIn.duration(420))} style={[styles.check, { backgroundColor: c.brand }]}>
                 <Ionicons name="checkmark" size={42} color={c.onBrand} />
               </Animated.View>
             </View>

@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { enter } from '@/lib/motion';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { type ComponentProps } from 'react';
@@ -70,7 +71,7 @@ export default function HomeScreen() {
       <AppHeader title="CiviQ" showLogo onBell={() => router.push('/notifications')} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Animated.View entering={FadeInDown.duration(450)}>
+        <Animated.View entering={enter(FadeInDown.duration(450))}>
           <LinearGradient colors={[c.brand, c.brandDeep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
             <View style={styles.texture} pointerEvents="none">
               <WaterTexture width={230} height={190} color="#8FE0EF" />
@@ -96,21 +97,21 @@ export default function HomeScreen() {
 
         {/* Learn the rule here rather than by bouncing off a locked action later. */}
         {!canParticipate ? (
-          <Animated.View entering={FadeInDown.duration(400).delay(90)} style={styles.gate}>
+          <Animated.View entering={enter(FadeInDown.duration(400).delay(90))} style={styles.gate}>
             <VerifyGate action="participate" />
           </Animated.View>
         ) : null}
 
-        <Animated.View entering={FadeInDown.duration(400).delay(120)} style={styles.qaRow}>
+        <Animated.View entering={enter(FadeInDown.duration(400).delay(120))} style={styles.qaRow}>
           <QuickAction icon="megaphone-outline" label={t.qaReport} bg={c.accentWash} fg={c.accentPressed} onPress={() => router.push('/complaint/new')} />
           <QuickAction icon="documents-outline" label={t.qaProjects} bg={c.brandWash} fg={c.brand} onPress={() => router.push('/proiecte')} />
         </Animated.View>
-        <Animated.View entering={FadeInDown.duration(400).delay(180)} style={styles.qaRow}>
+        <Animated.View entering={enter(FadeInDown.duration(400).delay(180))} style={styles.qaRow}>
           <QuickAction icon="alert-circle-outline" label={t.qaMyComplaints} bg={c.amberWash} fg={c.amber} onPress={() => router.push('/contact')} />
           <QuickAction icon="sparkles-outline" label={t.qaAsk} bg={c.greenWash} fg={c.green} onPress={() => router.push('/ask')} />
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(400).delay(240)} style={{ marginTop: Spacing.two }}>
+        <Animated.View entering={enter(FadeInDown.duration(400).delay(240))} style={{ marginTop: Spacing.two }}>
           <SectionLabel
             action={
               <Pressable onPress={() => router.push('/proiecte')}>
@@ -128,7 +129,7 @@ export default function HomeScreen() {
             <EmptyState icon="file-tray-outline" title={t.noProjects} />
           ) : (
             recent.map((post, i) => (
-              <Animated.View key={post.id} entering={FadeInDown.duration(400).delay(300 + i * 80)}>
+              <Animated.View key={post.id} entering={enter(FadeInDown.duration(400).delay(300 + i * 80))}>
                 <ProjectCard post={post} onPress={() => router.push({ pathname: '/project/[id]', params: { id: post.id } })} />
               </Animated.View>
             ))
