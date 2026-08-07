@@ -54,6 +54,16 @@ export const useMarkAllNotificationsRead = () => {
   });
 };
 
+// --- Auth. The screens hand the token + role straight to the auth store. ---
+
+export const useLogin = () =>
+  useMutation({
+    mutationFn: ({ email, password }: { email: string; password: string }) =>
+      api.login(email, password),
+  });
+
+export const useRegister = () => useMutation({ mutationFn: api.register });
+
 // --- Mutations ---
 
 export const useUpdateMe = () => {

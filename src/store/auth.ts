@@ -7,6 +7,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
+import { setAuthToken } from '@/api/client';
 import { setMockRole } from '@/api/service';
 import type { UserRole } from '@/api/types';
 
@@ -34,6 +35,7 @@ export const useAuth = create<AuthState>((set) => ({
         AsyncStorage.getItem(TOKEN_KEY),
         AsyncStorage.getItem(ROLE_KEY),
       ]);
+      setAuthToken(token);
       if (role) setMockRole(role as UserRole);
       set({ token, role: role as UserRole | null, hydrated: true });
     } catch {
@@ -45,11 +47,13 @@ export const useAuth = create<AuthState>((set) => ({
       [TOKEN_KEY, token],
       [ROLE_KEY, role],
     ]);
+    setAuthToken(token);
     setMockRole(role);
     set({ token, role });
   },
   signOut: async () => {
     await AsyncStorage.multiRemove([TOKEN_KEY, ROLE_KEY]);
+    setAuthToken(null);
     set({ token: null, role: null });
   },
 }));

@@ -16,6 +16,15 @@ export interface User {
   createdAt: string;
 }
 
+/** POST /auth/login and /auth/register both answer with this. */
+export interface AuthResponse {
+  accessToken: string;
+  tokenType: string;
+  /** Seconds; the MVP token lives 7 days and there is no refresh. */
+  expiresIn: number;
+  user: User;
+}
+
 /**
  * Author sub-object exactly as the API returns it ({ id, full_name }) — no role
  * and no title. Officials are identified by matching the post's own author id.

@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useLogin } from '@/api/hooks';
 import Logo from '@/assets/images/logo.svg';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -22,9 +23,25 @@ export default function LoginScreen() {
   const [emailFocus, setEmailFocus] = useState(false);
   const [pwFocus, setPwFocus] = useState(false);
   const [locale, setLocale] = useState<'ro' | 'ru'>('ro');
+  const [error, setError] = useState<string | null>(null);
+  const login = useLogin();
+  const canSubmit = email.trim().length > 3 && password.length > 0 && !login.isPending;
 
-  // Mock stand-in for AuthResponse.user.role: the real login reads it off the response.
-  const submit = () => signIn('dev-token', /admin|prim[aă]ri/i.test(email) ? 'ADMIN' : 'CITIZEN');
+  // 401 deliberately says the same thing for a wrong password and an unknown
+  // address — the API won't reveal which, and neither should we.
+  const submit = () =>
+    login.mutate(
+      { email: email.trim().toLowerCase(), password },
+      {
+        onSuccess: (res) => signIn(res.accessToken, res.user.role),
+        onError: (e: unknown) =>
+          setError(
+            (e as { code?: string })?.code === 'UNAUTHORIZED'
+              ? 'Email sau parolă incorectă.'
+              : 'Nu ne-am putut conecta. Verifică rețeaua și încearcă din nou.',
+          ),
+      },
+    );
 
   return (
     <KeyboardAvoidingView
@@ -112,10 +129,24 @@ export default function LoginScreen() {
           </View>
         </View>
 
+        {error ? (
+          <View style={[styles.error, { backgroundColor: c.accentWash, borderColor: c.accent }]}>
+            <Ionicons name="alert-circle-outline" size={16} color={c.accentPressed} />
+            <Text style={[styles.errorText, { color: c.accentPressed }]}>{error}</Text>
+          </View>
+        ) : null}
+
         <Pressable
           onPress={submit}
-          style={({ pressed }) => [styles.button, { backgroundColor: pressed ? c.brandDeep : c.brand }]}>
-          <Text style={[styles.buttonText, { color: c.onBrand }]}>Intră în cont</Text>
+          disabled={!canSubmit}
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            styles.button,
+            { backgroundColor: pressed ? c.brandDeep : c.brand, opacity: canSubmit ? 1 : 0.5 },
+          ]}>
+          <Text style={[styles.buttonText, { color: c.onBrand }]}>
+            {login.isPending ? 'Se conectează…' : 'Intră în cont'}
+          </Text>
           <Ionicons name="arrow-forward" size={18} color={c.onBrand} />
         </Pressable>
 
@@ -204,5 +235,16 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonText: { fontFamily: Fonts.semibold, fontSize: 15 },
+  error: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 10,
+    marginBottom: Spacing.two,
+  },
+  errorText: { flex: 1, fontFamily: Fonts.medium, fontSize: 12.5, lineHeight: 17 },
   footer: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: Spacing.one },
 });

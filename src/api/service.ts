@@ -4,10 +4,12 @@
  * the real fetch calls behind the same function signatures + snake_case mapping.
  */
 
+import { liveApi } from './live';
 import { mockAdmin, mockComments, mockComplaints, mockNotifications, mockPosts, mockUser } from './mock-data';
 import type {
   AiLanguage,
   AskAnswer,
+  AuthResponse,
   Comment,
   Complaint,
   CommentsSummary,
@@ -51,7 +53,28 @@ function nextReaction(current: ReactionKind | null, value: ReactionKind | null):
   return current === value ? null : value;
 }
 
-export const api = {
+const mockApi = {
+  /** Mirrors POST /auth/login: any password passes, the email picks the role. */
+  login: (email: string, _password: string): Promise<AuthResponse> => {
+    const user = /admin|prim[aă]ri/i.test(email) ? mockAdmin : mockUser;
+    return delay({ accessToken: 'dev-token', tokenType: 'bearer', expiresIn: 604800, user }, 400);
+  },
+
+  register: (input: {
+    email: string;
+    password: string;
+    fullName: string;
+    locale?: Locale;
+  }): Promise<AuthResponse> => {
+    mockUser.fullName = input.fullName;
+    mockUser.email = input.email;
+    if (input.locale) mockUser.locale = input.locale;
+    return delay(
+      { accessToken: 'dev-token', tokenType: 'bearer', expiresIn: 604800, user: { ...mockUser } },
+      400,
+    );
+  },
+
   getMe: (): Promise<User> => delay(activeRole === 'ADMIN' ? mockAdmin : mockUser),
   getPosts: (): Promise<Post[]> => delay(mockPosts),
   getPost: (id: string): Promise<Post | undefined> => delay(mockPosts.find((p) => p.id === id)),
@@ -439,3 +462,9 @@ export const api = {
       links: ['https://cahul.md/reglementari', 'https://cahul.md/formulare'],
     }),
 };
+
+/**
+ * The single swap point. `liveApi` is typed against `mockApi`, so if the real
+ * implementation ever drifts from what the screens call, this line fails to compile.
+ */
+export const api: typeof mockApi = USE_MOCK ? mockApi : liveApi;

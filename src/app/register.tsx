@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useRegister } from '@/api/hooks';
 import Logo from '@/assets/images/logo.svg';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -20,11 +21,32 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [locale, setLocale] = useState<'ro' | 'ru'>('ro');
+  const [error, setError] = useState<string | null>(null);
+  const register = useRegister();
 
   const back = () => (step === 0 ? router.back() : setStep((s) => s - 1));
   const next = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
-  // POST /auth/register always issues role CITIZEN.
-  const finish = () => signIn('dev-token', 'CITIZEN');
+
+  // POST /auth/register always issues role CITIZEN; 409 EMAIL_TAKEN is the one
+  // failure worth naming precisely, since the fix is to go back a step.
+  const finish = () =>
+    register.mutate(
+      { email: email.trim().toLowerCase(), password, fullName: name.trim(), locale },
+      {
+        onSuccess: (res) => signIn(res.accessToken, res.user.role),
+        onError: (e: unknown) => {
+          const code = (e as { code?: string })?.code;
+          setError(
+            code === 'EMAIL_TAKEN'
+              ? 'Există deja un cont cu acest email.'
+              : code === 'VALIDATION_ERROR'
+                ? 'Verifică datele: parola trebuie să aibă minim 8 caractere.'
+                : 'Nu am putut crea contul. Încearcă din nou.',
+          );
+          setStep(1);
+        },
+      },
+    );
 
   const progress = (step + 1) / TOTAL_STEPS;
 
@@ -100,7 +122,14 @@ export default function RegisterScreen() {
                   secureTextEntry
                   style={[styles.input, { borderColor: c.line, color: c.text, backgroundColor: c.surface }]}
                 />
+                <Text style={[styles.help, { color: c.textSecondary }]}>Minim 8 caractere.</Text>
               </View>
+              {error ? (
+                <View style={[styles.error, { backgroundColor: c.accentWash, borderColor: c.accent }]}>
+                  <Ionicons name="alert-circle-outline" size={16} color={c.accentPressed} />
+                  <Text style={[styles.errorText, { color: c.accentPressed }]}>{error}</Text>
+                </View>
+              ) : null}
             </>
           )}
 
@@ -188,6 +217,17 @@ const styles = StyleSheet.create({
   centerText: { textAlign: 'center', marginTop: Spacing.three },
   field: { gap: Spacing.one },
   label: { fontFamily: Fonts.medium, fontSize: 13 },
+  help: { fontFamily: Fonts.regular, fontSize: 11.5, marginTop: 4 },
+  error: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 10,
+  },
+  errorText: { flex: 1, fontFamily: Fonts.medium, fontSize: 12.5, lineHeight: 17 },
   input: {
     borderWidth: 1,
     borderRadius: Radius.md,
