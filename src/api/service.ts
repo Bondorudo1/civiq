@@ -18,6 +18,7 @@ import type {
   AiLanguage,
   AskAnswer,
   AuthResponse,
+  ChatReply,
   Comment,
   Complaint,
   CommentsSummary,
@@ -543,10 +544,49 @@ const mockApi = {
         'identitate și cererea tip, care poate fi completată la fața locului.',
       links: ['https://cahul.md/reglementari', 'https://cahul.md/formulare'],
     }),
+
+  /** Multi-turn chat. The mock echoes the last question so the shell is testable. */
+  chatWithBot: (messages: { role: 'user' | 'assistant'; content: string }[]): Promise<ChatReply> => {
+    const last = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+    return aiDelay({
+      answer:
+        `(răspuns simulat) Despre „${last.trim()}” — asistentul real caută în regulamentele, ` +
+        'formularele și hotărârile primăriei Cahul. Pornește serviciul AI și setează ' +
+        'EXPO_PUBLIC_AI_LIVE=true ca să vezi răspunsul adevărat.',
+      links: ['https://cahul.md/reglementari'],
+    });
+  },
+};
+
+/**
+ * The AI service runs in its own container, so it can be live while the rest is
+ * still mocked. `EXPO_PUBLIC_AI_LIVE=true` sends translate / summary / spellcheck
+ * / ask to the real backend without standing up the whole API.
+ */
+export const AI_LIVE = process.env.EXPO_PUBLIC_AI_LIVE === 'true';
+
+const liveAi = {
+  translatePost: liveApi.translatePost,
+  commentsSummary: liveApi.commentsSummary,
+  spellcheck: liveApi.spellcheck,
+  askCity: liveApi.askCity,
+  /**
+   * There is no /ai/chat endpoint yet, so a chat turn becomes one stateless
+   * /ai/ask call — which is exactly what that endpoint is specified to be.
+   * Swap to `liveApi.chatWithBot` once the RAG service exposes history.
+   */
+  chatWithBot: (messages: { role: 'user' | 'assistant'; content: string }[]): Promise<ChatReply> => {
+    const last = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+    return liveApi.askCity(last).then((a) => ({ answer: a.explain, links: a.links }));
+  },
 };
 
 /**
  * The single swap point. `liveApi` is typed against `mockApi`, so if the real
  * implementation ever drifts from what the screens call, this line fails to compile.
  */
-export const api: typeof mockApi = USE_MOCK ? mockApi : liveApi;
+export const api: typeof mockApi = USE_MOCK
+  ? AI_LIVE
+    ? { ...mockApi, ...liveAi }
+    : mockApi
+  : liveApi;

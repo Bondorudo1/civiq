@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -16,9 +16,8 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useAskCity } from '@/api/hooks';
-import { Button } from '@/components/ui/button';
-import { Plaque } from '@/components/ui/plaque';
+import { useChatWithBot } from '@/api/hooks';
+import type { ChatMessage } from '@/api/types';
 import { WaterTexture } from '@/components/water-texture';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -33,20 +32,62 @@ const SUGGESTIONS = [
 
 const MAX = 1000;
 
+/**
+ * Reanimated's entering animations strand the node at `visibility: hidden` on web
+ * when a message is appended while the scroller is animating to the bottom — the
+ * bubble mounts with its text and never becomes visible. Native is unaffected, so
+ * keep the animation there and let web render instantly.
+ */
+const enter = Platform.OS === 'web' ? undefined : FadeInDown.duration(260);
+
 export default function AskScreen() {
   const c = useTheme();
-  const [question, setQuestion] = useState('');
-  const ask = useAskCity();
+  const chat = useChatWithBot();
+  const scroller = useRef<ScrollView>(null);
+  const seq = useRef(0);
+  const nextId = () => `m${++seq.current}`;
 
-  const answer = ask.data;
-  // 503 AI_UNAVAILABLE is "try again", not a broken app — say so softly and keep the button live.
-  const unavailable = ask.isError;
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [draft, setDraft] = useState('');
 
-  const submit = (text?: string) => {
-    const q = (text ?? question).trim();
-    if (q.length < 3) return;
-    setQuestion(q);
-    ask.mutate(q);
+  const empty = messages.length === 0;
+
+  const ask = (content: string, history: ChatMessage[]) => {
+    chat.mutate(
+      history.filter((m) => !m.failed).map((m) => ({ role: m.role, content: m.content })),
+      {
+        onSuccess: (reply) =>
+          setMessages((m) => [
+            ...m,
+            { id: nextId(), role: 'assistant', content: reply.answer, links: reply.links },
+          ]),
+        // Keep the failure in the thread instead of a toast, so retry sits where
+        // the answer would have been.
+        onError: () =>
+          setMessages((m) => [...m, { id: nextId(), role: 'assistant', content, failed: true }]),
+      },
+    );
+  };
+
+  const send = (text?: string) => {
+    const content = (text ?? draft).trim();
+    if (content.length < 3 || chat.isPending) return;
+    const history: ChatMessage[] = [...messages, { id: nextId(), role: 'user', content }];
+    setMessages(history);
+    setDraft('');
+    ask(content, history);
+  };
+
+  const retry = (failedId: string, question: string) => {
+    const history = messages.filter((m) => m.id !== failedId);
+    setMessages(history);
+    ask(question, history);
+  };
+
+  const reset = () => {
+    setMessages([]);
+    setDraft('');
+    chat.reset();
   };
 
   return (
@@ -58,15 +99,25 @@ export default function AskScreen() {
           <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Înapoi">
             <Ionicons name="arrow-back" size={24} color={c.onBrand} />
           </Pressable>
-          <Text style={[styles.barTitle, { color: c.onBrand }]}>Întreabă primăria</Text>
+          <View style={styles.barTitleWrap}>
+            <Text style={[styles.barTitle, { color: c.onBrand }]}>Asistentul primăriei</Text>
+            <Text style={styles.barSub}>Răspunde din regulamentele orașului</Text>
+          </View>
+          {!empty ? (
+            <Pressable onPress={reset} hitSlop={10} accessibilityRole="button" accessibilityLabel="Conversație nouă">
+              <Ionicons name="create-outline" size={22} color={c.onBrand} />
+            </Pressable>
+          ) : null}
         </View>
       </SafeAreaView>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        ref={scroller}
+        contentContainerStyle={styles.thread}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled">
-        {!answer && !ask.isPending ? (
+        keyboardShouldPersistTaps="handled"
+        onContentSizeChange={() => scroller.current?.scrollToEnd({ animated: true })}>
+        {empty ? (
           <View style={styles.intro}>
             <View style={styles.motif} pointerEvents="none">
               <WaterTexture width={210} height={150} color={c.brandBright} />
@@ -74,16 +125,17 @@ export default function AskScreen() {
             <Ionicons name="sparkles-outline" size={30} color={c.brand} />
             <Text style={[styles.introTitle, { color: c.text }]}>Ce vrei să afli?</Text>
             <Text style={[styles.introText, { color: c.textSecondary }]}>
-              Răspundem din regulamentele și formularele primăriei Cahul, cu sursele la vedere.
+              Întreabă despre acte, taxe, programul ghișeelor sau deciziile consiliului. Îți arăt
+              și sursele.
             </Text>
           </View>
         ) : null}
 
-        {!answer && !ask.isPending
+        {empty
           ? SUGGESTIONS.map((s) => (
               <Pressable
                 key={s}
-                onPress={() => submit(s)}
+                onPress={() => send(s)}
                 style={[styles.suggestion, { backgroundColor: c.surface, borderColor: c.line }]}>
                 <Ionicons name="help-circle-outline" size={17} color={c.brand} />
                 <Text style={[styles.suggestionText, { color: c.text }]}>{s}</Text>
@@ -92,68 +144,81 @@ export default function AskScreen() {
             ))
           : null}
 
-        {ask.isPending ? (
-          <Plaque style={styles.pending}>
-            <ActivityIndicator color={c.brand} />
-            <Text style={[styles.pendingText, { color: c.textSecondary }]}>
-              Caut în baza de cunoștințe a primăriei…
-            </Text>
-            <Text style={[styles.pendingHint, { color: c.muted }]}>Poate dura până la un minut.</Text>
-          </Plaque>
-        ) : null}
-
-        {answer ? (
-          <Animated.View entering={FadeInDown.duration(320)}>
-            <Text style={[styles.asked, { color: c.textSecondary }]} numberOfLines={3}>
-              {question}
-            </Text>
-            <Plaque borderColor={c.brand} style={styles.answer}>
-              <View style={styles.answerHead}>
-                <View style={[styles.seal, { backgroundColor: c.brand }]}>
-                  <Ionicons name="sparkles" size={14} color={c.onBrand} />
-                </View>
-                <Text style={[styles.answerLabel, { color: c.brand }]}>RĂSPUNS ASISTAT DE AI</Text>
+        {messages.map((m) =>
+          m.role === 'user' ? (
+            <Animated.View key={m.id} entering={enter} style={styles.userRow}>
+              <View style={[styles.userBubble, { backgroundColor: c.brand }]}>
+                <Text style={[styles.userText, { color: c.onBrand }]}>{m.content}</Text>
               </View>
-              <Text style={[styles.answerText, { color: c.text }]}>{answer.explain}</Text>
+            </Animated.View>
+          ) : m.failed ? (
+            <Animated.View key={m.id} entering={enter} style={styles.botRow}>
+              <View style={[styles.seal, { backgroundColor: c.accent }]}>
+                <Ionicons name="alert" size={13} color="#FFFFFF" />
+              </View>
+              <View style={[styles.botBubble, { backgroundColor: c.accentWash, borderColor: c.accent }]}>
+                <Text style={[styles.failText, { color: c.accentPressed }]}>
+                  Asistentul nu a răspuns. Încearcă din nou.
+                </Text>
+                <Pressable onPress={() => retry(m.id, m.content)} hitSlop={8} style={styles.retry}>
+                  <Ionicons name="refresh" size={14} color={c.accentPressed} />
+                  <Text style={[styles.retryText, { color: c.accentPressed }]}>Reîncearcă</Text>
+                </Pressable>
+              </View>
+            </Animated.View>
+          ) : (
+            <Animated.View key={m.id} entering={enter} style={styles.botRow}>
+              <View style={[styles.seal, { backgroundColor: c.brand }]}>
+                <Ionicons name="sparkles" size={13} color={c.onBrand} />
+              </View>
+              <View style={[styles.botBubble, { backgroundColor: c.surface, borderColor: c.line }]}>
+                <Text style={[styles.botText, { color: c.text }]}>{m.content}</Text>
+                {m.links?.length ? (
+                  <View style={styles.sources}>
+                    {m.links.map((link) => (
+                      <Pressable
+                        key={link}
+                        onPress={() =>
+                          WebBrowser.openBrowserAsync(link, { toolbarColor: c.brand, controlsColor: '#FFFFFF' })
+                        }
+                        style={styles.source}>
+                        <Ionicons name="link-outline" size={13} color={c.brand} />
+                        <Text style={[styles.sourceText, { color: c.brand }]} numberOfLines={1}>
+                          {link.replace(/^https?:\/\//, '')}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            </Animated.View>
+          ),
+        )}
 
-              {answer.links.length ? (
-                <View style={styles.sources}>
-                  <Text style={[styles.sourcesLabel, { color: c.textSecondary }]}>SURSE</Text>
-                  {answer.links.map((link) => (
-                    <Pressable
-                      key={link}
-                      onPress={() => WebBrowser.openBrowserAsync(link, { toolbarColor: c.brand, controlsColor: '#FFFFFF' })}
-                      style={styles.source}>
-                      <Ionicons name="link-outline" size={14} color={c.brand} />
-                      <Text style={[styles.sourceText, { color: c.brand }]} numberOfLines={1}>
-                        {link.replace(/^https?:\/\//, '')}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              ) : null}
-            </Plaque>
-            <Text style={[styles.disclaimer, { color: c.muted }]}>
-              Informativ. Pentru situații specifice, confirmă la ghișeul primăriei.
-            </Text>
-          </Animated.View>
+        {chat.isPending ? (
+          <View style={styles.botRow}>
+            <View style={[styles.seal, { backgroundColor: c.brand }]}>
+              <Ionicons name="sparkles" size={13} color={c.onBrand} />
+            </View>
+            <View style={[styles.botBubble, styles.typing, { backgroundColor: c.surface, borderColor: c.line }]}>
+              <ActivityIndicator size="small" color={c.brand} />
+              <Text style={[styles.typingText, { color: c.textSecondary }]}>Caut în documente…</Text>
+            </View>
+          </View>
         ) : null}
 
-        {unavailable ? (
-          <View style={[styles.soft, { backgroundColor: c.brandWash, borderColor: c.brand }]}>
-            <Ionicons name="cloud-offline-outline" size={17} color={c.brand} />
-            <Text style={[styles.softText, { color: c.brand }]}>
-              Asistentul nu răspunde acum. Încearcă din nou peste un moment.
-            </Text>
-          </View>
+        {!empty ? (
+          <Text style={[styles.disclaimer, { color: c.muted }]}>
+            Informativ. Pentru situații specifice, confirmă la ghișeul primăriei.
+          </Text>
         ) : null}
       </ScrollView>
 
       <View style={[styles.composer, { backgroundColor: c.surface, borderTopColor: c.line }]}>
         <TextInput
-          value={question}
-          onChangeText={setQuestion}
-          placeholder="Scrie întrebarea ta…"
+          value={draft}
+          onChangeText={setDraft}
+          placeholder={empty ? 'Scrie întrebarea ta…' : 'Întreabă altceva…'}
           placeholderTextColor={c.textSecondary}
           underlineColorAndroid="transparent"
           maxLength={MAX}
@@ -164,21 +229,28 @@ export default function AskScreen() {
             Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null,
           ]}
         />
-        <Button
-          title={ask.isPending ? 'Se caută…' : 'Întreabă'}
-          icon="arrow-forward"
-          onPress={() => submit()}
-          disabled={question.trim().length < 3 || ask.isPending}
-        />
+        <Pressable
+          onPress={() => send()}
+          disabled={draft.trim().length < 3 || chat.isPending}
+          accessibilityRole="button"
+          accessibilityLabel="Trimite întrebarea"
+          style={[
+            styles.send,
+            { backgroundColor: c.brand, opacity: draft.trim().length < 3 || chat.isPending ? 0.4 : 1 },
+          ]}>
+          <Ionicons name="arrow-up" size={19} color={c.onBrand} />
+        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingHorizontal: Spacing.three, paddingVertical: 12 },
-  barTitle: { fontFamily: Fonts.semibold, fontSize: 18, letterSpacing: -0.2 },
-  content: { padding: Spacing.three, gap: Spacing.two, paddingBottom: Spacing.five },
+  bar: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingHorizontal: Spacing.three, paddingVertical: 10 },
+  barTitleWrap: { flex: 1 },
+  barTitle: { fontFamily: Fonts.semibold, fontSize: 17, letterSpacing: -0.2 },
+  barSub: { fontFamily: Fonts.regular, fontSize: 11.5, color: '#CFE9EF', marginTop: 1 },
+  thread: { padding: Spacing.three, gap: Spacing.two, paddingBottom: Spacing.four },
   intro: { alignItems: 'center', paddingTop: Spacing.four, paddingBottom: Spacing.three, gap: 6 },
   motif: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center', opacity: 0.5 },
   introTitle: { fontFamily: Fonts.bold, fontSize: 20, letterSpacing: -0.3 },
@@ -193,39 +265,47 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   suggestionText: { flex: 1, fontFamily: Fonts.medium, fontSize: 13.5, lineHeight: 18 },
-  pending: { alignItems: 'center', gap: 7, paddingVertical: Spacing.five },
-  pendingText: { fontFamily: Fonts.medium, fontSize: 13.5 },
-  pendingHint: { fontFamily: Fonts.regular, fontSize: 11.5 },
-  asked: { fontFamily: Fonts.medium, fontSize: 13, lineHeight: 18, marginBottom: Spacing.two },
-  answer: { gap: Spacing.two },
-  answerHead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  seal: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  answerLabel: { fontFamily: Fonts.bold, fontSize: 9.5, letterSpacing: 0.8 },
-  answerText: { fontFamily: Fonts.regular, fontSize: 14, lineHeight: 21 },
-  sources: { gap: 5, marginTop: Spacing.one },
-  sourcesLabel: { fontFamily: Fonts.semibold, fontSize: 9.5, letterSpacing: 1 },
-  source: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  sourceText: { flex: 1, fontFamily: Fonts.medium, fontSize: 12.5 },
-  disclaimer: { fontFamily: Fonts.regular, fontSize: 11.5, lineHeight: 16, marginTop: Spacing.two, textAlign: 'center' },
-  soft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
+  userRow: { alignItems: 'flex-end' },
+  userBubble: {
+    maxWidth: '85%',
+    borderRadius: Radius.lg,
+    borderBottomRightRadius: 5,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 10,
+  },
+  userText: { fontFamily: Fonts.regular, fontSize: 14.5, lineHeight: 20 },
+  botRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
+  seal: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  botBubble: {
+    flex: 1,
     borderWidth: 1,
-    borderRadius: Radius.md,
+    borderRadius: Radius.lg,
+    borderTopLeftRadius: 5,
     paddingHorizontal: Spacing.three,
     paddingVertical: 11,
+    gap: 7,
   },
-  softText: { flex: 1, fontFamily: Fonts.medium, fontSize: 12.5, lineHeight: 17 },
-  composer: { padding: Spacing.three, borderTopWidth: 1, gap: Spacing.two },
+  botText: { fontFamily: Fonts.regular, fontSize: 14.5, lineHeight: 21 },
+  typing: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 0, alignSelf: 'flex-start' },
+  typingText: { fontFamily: Fonts.medium, fontSize: 13 },
+  sources: { gap: 4, paddingTop: 2 },
+  source: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  sourceText: { flex: 1, fontFamily: Fonts.medium, fontSize: 12 },
+  failText: { fontFamily: Fonts.medium, fontSize: 13.5, lineHeight: 19 },
+  retry: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start' },
+  retryText: { fontFamily: Fonts.semibold, fontSize: 13 },
+  disclaimer: { fontFamily: Fonts.regular, fontSize: 11.5, lineHeight: 16, textAlign: 'center', marginTop: Spacing.two },
+  composer: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.two, padding: Spacing.three, borderTopWidth: 1 },
   input: {
-    minHeight: 46,
+    flex: 1,
+    minHeight: 42,
     maxHeight: 110,
-    borderRadius: Radius.md,
+    borderRadius: Radius.pill,
     paddingHorizontal: Spacing.three,
-    paddingVertical: 12,
+    paddingVertical: 11,
     fontFamily: Fonts.regular,
     fontSize: 14.5,
     textAlignVertical: 'top',
   },
+  send: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
 });

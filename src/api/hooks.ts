@@ -161,6 +161,9 @@ export const useSpellcheck = () => useMutation({ mutationFn: api.spellcheck });
 
 export const useAskCity = () => useMutation({ mutationFn: api.askCity });
 
+/** One chat turn. History is client-side; the service stays stateless. */
+export const useChatWithBot = () => useMutation({ mutationFn: api.chatWithBot });
+
 // --- Admin. Every mutation refreshes the queue it touches. ---
 
 export const useAdminComplaints = (filters?: {

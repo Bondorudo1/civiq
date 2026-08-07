@@ -121,7 +121,7 @@ export default function NewComplaintScreen() {
           </View>
         </SafeAreaView>
         <View style={styles.gate}>
-          <VerifyGate action="depui o sesizare" />
+          <VerifyGate action="depune o sesizare" />
         </View>
       </View>
     );

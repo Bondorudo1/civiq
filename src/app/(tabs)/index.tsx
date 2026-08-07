@@ -93,7 +93,7 @@ export default function HomeScreen() {
         {/* Learn the rule here rather than by bouncing off a locked action later. */}
         {!canParticipate ? (
           <Animated.View entering={FadeInDown.duration(400).delay(90)} style={styles.gate}>
-            <VerifyGate action="participi" />
+            <VerifyGate action="participa" />
           </Animated.View>
         ) : null}
 

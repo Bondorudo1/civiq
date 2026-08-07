@@ -126,6 +126,23 @@ export interface AskAnswer {
   links: string[];
 }
 
+/** One turn in the RAG chat. `id` is client-side only, for list keys. */
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  /** Sources behind an assistant turn. */
+  links?: string[];
+  /** Set when the turn failed, so the UI can offer a retry in place. */
+  failed?: boolean;
+}
+
+/** What the bot returns for one exchange. */
+export interface ChatReply {
+  answer: string;
+  links: string[];
+}
+
 /** Shape returned by both react endpoints. */
 export interface ReactionResult {
   myReaction: ReactionKind | null;

@@ -11,6 +11,7 @@ import type {
   AiLanguage,
   AskAnswer,
   AuthResponse,
+  ChatReply,
   Comment,
   CommentsSummary,
   Complaint,
@@ -128,6 +129,14 @@ export const liveApi = {
     send<{ correctedText: string }>('POST', '/ai/spellcheck', { text }).then((r) => r.correctedText),
 
   askCity: (question: string): Promise<AskAnswer> => send('POST', '/ai/ask', { question }),
+
+  /**
+   * Multi-turn RAG chat. Unlike /ai/ask, the whole exchange is sent each time —
+   * the client owns the history so the service can stay stateless.
+   * Proposed endpoint; see BACKEND.md.
+   */
+  chatWithBot: (messages: { role: 'user' | 'assistant'; content: string }[]): Promise<ChatReply> =>
+    send('POST', '/ai/chat', { messages }),
 
   // --- Admin ---
   adminComplaints: (filters?: {

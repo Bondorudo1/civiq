@@ -110,7 +110,7 @@ export default function ProfilScreen() {
             </View>
           </Plaque>
         ) : (
-          <VerifyGate action="participi" />
+          <VerifyGate action="participa" />
         )}
 
         <Text style={[styles.label, { color: c.textSecondary }]}>Limbă</Text>

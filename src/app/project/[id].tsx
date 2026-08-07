@@ -415,7 +415,7 @@ export default function ProjectDetailScreen() {
       {/* Reading is open to everyone; acting waits on the primărie's approval. */}
       {!closed && !canParticipate ? (
         <View style={[styles.composer, { backgroundColor: c.surface, borderTopColor: c.line }]}>
-          <VerifyGate action="comentezi" compact />
+          <VerifyGate action="comenta" compact />
         </View>
       ) : closed ? (
         <View style={[styles.composer, styles.closedBar, { backgroundColor: c.surface, borderTopColor: c.line }]}>
