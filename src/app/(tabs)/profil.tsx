@@ -11,9 +11,12 @@ import { Field } from '@/components/ui/field';
 import { Plaque } from '@/components/ui/plaque';
 import { VerifyGate } from '@/components/verify-gate';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { useLocale, useT } from '@/i18n';
+import { profileText } from '@/i18n/profile';
 import { useTheme } from '@/hooks/use-theme';
 import { useVerification } from '@/hooks/use-verification';
 import { useAuth } from '@/store/auth';
+import { useLocaleStore } from '@/store/locale';
 
 function initials(name?: string): string {
   if (!name) return '·';
@@ -28,16 +31,24 @@ function initials(name?: string): string {
 
 export default function ProfilScreen() {
   const c = useTheme();
+  const t = useT(profileText);
   const router = useRouter();
   const { data: me } = useMe();
   const signOut = useAuth((s) => s.signOut);
   const updateMe = useUpdateMe();
   const { canParticipate } = useVerification();
 
+  // The active UI language is the store's; the server copy is persistence.
+  const locale = useLocale();
+  const setLocale = useLocaleStore((s) => s.setLocale);
+  const chooseLocale = (l: Locale) => {
+    setLocale(l); // instant, and re-renders every subscriber including the tab bar
+    updateMe.mutate({ locale: l }); // persist to the account (PATCH /me)
+  };
+
   // PATCH /api/me takes either field on its own.
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
-  const locale = me?.locale ?? 'ro';
 
   const startEdit = () => {
     setName(me?.fullName ?? '');
@@ -51,7 +62,7 @@ export default function ProfilScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
-      <AppHeader title="Profil" onBell={() => router.push('/notifications')} />
+      <AppHeader title={t.title} onBell={() => router.push('/notifications')} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Plaque style={styles.card}>
@@ -67,7 +78,7 @@ export default function ProfilScreen() {
             </Text>
           </View>
           {!editing ? (
-            <Pressable onPress={startEdit} hitSlop={10} accessibilityRole="button" accessibilityLabel="Editează numele">
+            <Pressable onPress={startEdit} hitSlop={10} accessibilityRole="button" accessibilityLabel={t.editName}>
               <Ionicons name="create-outline" size={20} color={c.brand} />
             </Pressable>
           ) : null}
@@ -76,20 +87,20 @@ export default function ProfilScreen() {
         {editing ? (
           <Plaque style={styles.edit}>
             <Field
-              label="Nume complet"
+              label={t.fullName}
               icon="person-outline"
               value={name}
               onChangeText={setName}
               maxLength={120}
-              placeholder="Numele tău"
+              placeholder={t.namePlaceholder}
             />
             <View style={styles.editBtns}>
               <View style={{ flex: 1 }}>
-                <Button title="Anulează" variant="secondary" onPress={() => setEditing(false)} />
+                <Button title={t.cancel} variant="secondary" onPress={() => setEditing(false)} />
               </View>
               <View style={{ flex: 1 }}>
                 <Button
-                  title={updateMe.isPending ? 'Se salvează…' : 'Salvează'}
+                  title={updateMe.isPending ? t.saving : t.save}
                   onPress={saveName}
                   disabled={name.trim().length < 2 || updateMe.isPending}
                 />
@@ -98,32 +109,30 @@ export default function ProfilScreen() {
           </Plaque>
         ) : null}
 
-        <Text style={[styles.label, { color: c.textSecondary }]}>Statut</Text>
+        <Text style={[styles.label, { color: c.textSecondary }]}>{t.status}</Text>
         {canParticipate ? (
           <Plaque borderColor={c.green} style={styles.statusCard}>
             <Ionicons name="shield-checkmark" size={20} color={c.green} />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.statusTitle, { color: c.green }]}>Locuitor verificat</Text>
-              <Text style={[styles.statusBody, { color: c.textSecondary }]}>
-                Poți comenta, reacționa și depune sesizări.
-              </Text>
+              <Text style={[styles.statusTitle, { color: c.green }]}>{t.verified}</Text>
+              <Text style={[styles.statusBody, { color: c.textSecondary }]}>{t.verifiedBody}</Text>
             </View>
           </Plaque>
         ) : (
-          <VerifyGate action="participa" />
+          <VerifyGate action="participate" />
         )}
 
-        <Text style={[styles.label, { color: c.textSecondary }]}>Limbă</Text>
+        <Text style={[styles.label, { color: c.textSecondary }]}>{t.language}</Text>
         <View style={styles.langRow}>
           {(['ro', 'ru'] as const).map((l) => {
             const active = locale === l;
             return (
               <Pressable
                 key={l}
-                onPress={() => updateMe.mutate({ locale: l })}
+                onPress={() => chooseLocale(l)}
                 style={[styles.lang, { borderColor: active ? c.brand : c.line, backgroundColor: active ? c.brandWash : c.surface }]}>
                 <Text style={{ fontFamily: Fonts.semibold, fontSize: 14, color: active ? c.brand : c.text }}>
-                  {l === 'ro' ? 'Română' : 'Русский'}
+                  {l === 'ro' ? t.languageRo : t.languageRu}
                 </Text>
                 {active ? <Ionicons name="checkmark-circle" size={20} color={c.brand} /> : null}
               </Pressable>
@@ -132,10 +141,10 @@ export default function ProfilScreen() {
         </View>
 
         <View style={{ marginTop: Spacing.four }}>
-          <Button title="Deconectare" variant="secondary" icon="log-out-outline" onPress={signOut} />
+          <Button title={t.signOut} variant="secondary" icon="log-out-outline" onPress={signOut} />
         </View>
 
-        <Text style={[styles.version, { color: c.muted }]}>CiviQ · Cahul · v1.0</Text>
+        <Text style={[styles.version, { color: c.muted }]}>{t.version}</Text>
       </ScrollView>
     </View>
   );

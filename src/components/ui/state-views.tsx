@@ -5,6 +5,8 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { WaterTexture } from '@/components/water-texture';
 import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useT } from '@/i18n';
+import { sharedText } from '@/i18n/shared';
 
 import { Button } from './button';
 
@@ -55,16 +57,15 @@ export function EmptyState({
 
 export function ErrorView({ onRetry }: { onRetry?: () => void }) {
   const c = useTheme();
+  const t = useT(sharedText);
   return (
     <View style={styles.center}>
       <Ionicons name="cloud-offline-outline" size={44} color={c.line} />
-      <Text style={[styles.title, { color: c.text }]}>Ceva n-a mers</Text>
-      <Text style={[styles.msg, { color: c.textSecondary }]}>
-        Nu am putut încărca datele. Verifică conexiunea și încearcă din nou.
-      </Text>
+      <Text style={[styles.title, { color: c.text }]}>{t.errorTitle}</Text>
+      <Text style={[styles.msg, { color: c.textSecondary }]}>{t.errorBody}</Text>
       {onRetry ? (
         <View style={styles.action}>
-          <Button title="Reîncearcă" variant="secondary" icon="refresh-outline" onPress={onRetry} />
+          <Button title={t.retry} variant="secondary" icon="refresh-outline" onPress={onRetry} />
         </View>
       ) : null}
     </View>

@@ -9,12 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useT } from '@/i18n';
+import { adminDetailText } from '@/i18n/adminDetail';
 
 /** The backend takes a plain date; anything else is a 422. */
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export default function AdminNewNotificationScreen() {
   const c = useTheme();
+  const t = useT(adminDetailText);
   const create = useAdminCreateNotification();
 
   const [title, setTitle] = useState('');
@@ -32,7 +35,7 @@ export default function AdminNewNotificationScreen() {
       { title: title.trim(), body: body.trim(), eventDate: eventDate.trim() || null },
       {
         onSuccess: () => router.back(),
-        onError: () => setError('Nu am putut publica anunțul. Încearcă din nou.'),
+        onError: () => setError(t.publishNotificationFailed),
       },
     );
   };
@@ -43,36 +46,34 @@ export default function AdminNewNotificationScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView edges={['top']} style={{ backgroundColor: c.brandDeep }}>
         <View style={styles.bar}>
-          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Înapoi">
+          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel={t.back}>
             <Ionicons name="arrow-back" size={24} color={c.onBrand} />
           </Pressable>
-          <Text style={[styles.barTitle, { color: c.onBrand }]}>Anunț nou</Text>
+          <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.newNotificationBar}</Text>
         </View>
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={[styles.notice, { backgroundColor: c.accentWash, borderColor: c.accent }]}>
           <Ionicons name="megaphone-outline" size={16} color={c.accentPressed} />
-          <Text style={[styles.noticeText, { color: c.accentPressed }]}>
-            Anunțul ajunge la toți locuitorii înregistrați, imediat după publicare.
-          </Text>
+          <Text style={[styles.noticeText, { color: c.accentPressed }]}>{t.broadcastNotice}</Text>
         </View>
 
         <Field
-          label="Titlu"
+          label={t.fieldTitle}
           icon="pricetag-outline"
-          placeholder="Ex. Întrerupere apă în centru"
+          placeholder={t.notificationTitlePlaceholder}
           value={title}
           onChangeText={setTitle}
           maxLength={200}
         />
 
         <View style={styles.group}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Conținut</Text>
+          <Text style={[styles.label, { color: c.textSecondary }]}>{t.fieldBody}</Text>
           <TextInput
             value={body}
             onChangeText={setBody}
-            placeholder="Ce trebuie să știe locuitorii: ce, unde, când, cât durează…"
+            placeholder={t.notificationBodyPlaceholder}
             placeholderTextColor={c.textSecondary}
             underlineColorAndroid="transparent"
             maxLength={5000}
@@ -86,7 +87,7 @@ export default function AdminNewNotificationScreen() {
         </View>
 
         <Field
-          label="Data evenimentului (opțional)"
+          label={t.eventDate}
           icon="calendar-outline"
           placeholder="2026-08-15"
           value={eventDate}
@@ -95,15 +96,13 @@ export default function AdminNewNotificationScreen() {
         />
         {/* Feed order keys off this: upcoming dates rise to the top. */}
         <Text style={[styles.hint, { color: dateValid ? c.textSecondary : c.accentPressed }]}>
-          {dateValid
-            ? 'Anunțurile cu dată viitoare apar primele în lista locuitorilor.'
-            : 'Formatul trebuie să fie AAAA-LL-ZZ.'}
+          {dateValid ? t.eventDateHint : t.dateFormat}
         </Text>
 
         {error ? <Text style={[styles.hint, { color: c.accentPressed }]}>{error}</Text> : null}
 
         <Button
-          title={create.isPending ? 'Se publică…' : 'Publică anunțul'}
+          title={create.isPending ? t.publishing : t.publishNotification}
           icon="megaphone-outline"
           onPress={submit}
           disabled={!canSubmit || create.isPending}

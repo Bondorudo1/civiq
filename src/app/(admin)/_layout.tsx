@@ -3,6 +3,8 @@ import { Tabs } from 'expo-router';
 import { type ComponentProps } from 'react';
 
 import { CivicTabBar } from '@/components/civic-tab-bar';
+import { useT } from '@/i18n';
+import { adminTabsText } from '@/i18n/adminTabs';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -16,15 +18,17 @@ const ADMIN_ICONS: Record<string, IoniconName> = {
 };
 
 export default function AdminLayout() {
+  const t = useT(adminTabsText);
+
   return (
     <Tabs
       screenOptions={{ headerShown: false, animation: 'shift' }}
-      tabBar={(props) => <CivicTabBar {...props} icons={ADMIN_ICONS} />}>
-      <Tabs.Screen name="index" options={{ title: 'Sesizări' }} />
-      <Tabs.Screen name="proiecte" options={{ title: 'Proiecte' }} />
-      <Tabs.Screen name="anunturi" options={{ title: 'Anunțuri' }} />
-      <Tabs.Screen name="locuitori" options={{ title: 'Locuitori' }} />
-      <Tabs.Screen name="cont" options={{ title: 'Cont' }} />
+      tabBar={(props) => <CivicTabBar {...props} icons={ADMIN_ICONS} shell="admin" />}>
+      <Tabs.Screen name="index" options={{ title: t.tabQueue }} />
+      <Tabs.Screen name="proiecte" options={{ title: t.tabPosts }} />
+      <Tabs.Screen name="anunturi" options={{ title: t.tabNotices }} />
+      <Tabs.Screen name="locuitori" options={{ title: t.tabResidents }} />
+      <Tabs.Screen name="cont" options={{ title: t.tabAccount }} />
     </Tabs>
   );
 }

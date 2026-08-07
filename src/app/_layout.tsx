@@ -14,10 +14,27 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { useMe } from '@/api/hooks';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/store/auth';
+import { useLocaleStore } from '@/store/locale';
 
 SplashScreen.preventAutoHideAsync();
+
+/**
+ * Adopts the account's saved locale once it loads, so a returning resident who
+ * chose Russian sees Russian on this device too. The Profil toggle sets the store
+ * itself for an instant switch; this only reconciles from the server on load.
+ * Renders nothing — it just needs to live under QueryClientProvider.
+ */
+function LocaleSync() {
+  const { data: me } = useMe();
+  const setLocale = useLocaleStore((s) => s.setLocale);
+  useEffect(() => {
+    if (me?.locale) setLocale(me.locale);
+  }, [me?.locale, setLocale]);
+  return null;
+}
 
 // Light theme only (dark theme intentionally not supported).
 const CiviqLight = {
@@ -68,6 +85,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
+        <LocaleSync />
         <SafeAreaProvider>
         <ThemeProvider value={CiviqLight}>
           {/* Drilling into a detail slides in from the right (it lives "inside" the list).

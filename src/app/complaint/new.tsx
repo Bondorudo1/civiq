@@ -17,6 +17,8 @@ import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { VerifyGate } from '@/components/verify-gate';
 import { useTheme } from '@/hooks/use-theme';
 import { useVerification } from '@/hooks/use-verification';
+import { useLocale, useT } from '@/i18n';
+import { newComplaintText } from '@/i18n/newComplaint';
 import { shortRef } from '@/lib/id';
 
 const CATEGORIES = Object.keys(COMPLAINT_CATEGORY) as ComplaintCategory[];
@@ -28,6 +30,8 @@ const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export default function NewComplaintScreen() {
   const c = useTheme();
+  const t = useT(newComplaintText);
+  const loc = useLocale();
   const [category, setCategory] = useState<ComplaintCategory | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -48,11 +52,11 @@ export default function NewComplaintScreen() {
     if (res.canceled) return;
     const asset = res.assets[0];
     if (asset.mimeType && !PHOTO_TYPES.includes(asset.mimeType)) {
-      setError('Sunt acceptate doar imagini JPEG, PNG sau WebP.');
+      setError(t.photoType);
       return;
     }
     if (asset.fileSize && asset.fileSize > PHOTO_MAX_BYTES) {
-      setError('Fotografia depășește 10 MB. Alege una mai mică.');
+      setError(t.photoTooLarge);
       return;
     }
     setError(null);
@@ -72,7 +76,7 @@ export default function NewComplaintScreen() {
       },
       {
         onSuccess: () => setSubmitted(true),
-        onError: () => setError('Nu am putut trimite sesizarea. Verifică conexiunea și încearcă din nou.'),
+        onError: () => setError(t.submitFailed),
       },
     );
   };
@@ -90,16 +94,14 @@ export default function NewComplaintScreen() {
                 <Ionicons name="checkmark" size={42} color={c.onBrand} />
               </Animated.View>
             </View>
-            <Text style={[styles.successTitle, { color: c.text }]}>Sesizarea a fost trimisă</Text>
+            <Text style={[styles.successTitle, { color: c.text }]}>{t.successTitle}</Text>
             <Text style={[styles.successRef, { color: c.brand }]}>
               {create.data ? shortRef(create.data.id) : ''}
             </Text>
-            <Text style={[styles.successMsg, { color: c.textSecondary }]}>
-              Primăria răspunde în 30 de zile. Vei primi o notificare la fiecare schimbare de status.
-            </Text>
+            <Text style={[styles.successMsg, { color: c.textSecondary }]}>{t.successMsg}</Text>
             <View style={styles.successBtns}>
-              <Button title="Vezi sesizările mele" icon="arrow-forward" onPress={() => router.replace('/contact')} />
-              <Button title="Înapoi acasă" variant="secondary" onPress={() => router.replace('/')} />
+              <Button title={t.seeMine} icon="arrow-forward" onPress={() => router.replace('/contact')} />
+              <Button title={t.backHome} variant="secondary" onPress={() => router.replace('/')} />
             </View>
           </View>
         </SafeAreaView>
@@ -114,14 +116,14 @@ export default function NewComplaintScreen() {
       <View style={{ flex: 1, backgroundColor: c.background }}>
         <SafeAreaView edges={['top']} style={{ backgroundColor: c.brand }}>
           <View style={styles.bar}>
-            <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Înapoi">
+            <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel={t.back}>
               <Ionicons name="arrow-back" size={24} color={c.onBrand} />
             </Pressable>
-            <Text style={[styles.barTitle, { color: c.onBrand }]}>Sesizare nouă</Text>
+            <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.title}</Text>
           </View>
         </SafeAreaView>
         <View style={styles.gate}>
-          <VerifyGate action="depune o sesizare" />
+          <VerifyGate action="complain" />
         </View>
       </View>
     );
@@ -131,16 +133,16 @@ export default function NewComplaintScreen() {
     <View style={{ flex: 1, backgroundColor: c.background }}>
       <SafeAreaView edges={['top']} style={{ backgroundColor: c.brand }}>
         <View style={styles.bar}>
-          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Înapoi">
+          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel={t.back}>
             <Ionicons name="arrow-back" size={24} color={c.onBrand} />
           </Pressable>
-          <Text style={[styles.barTitle, { color: c.onBrand }]}>Sesizare nouă</Text>
+          <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.title}</Text>
         </View>
       </SafeAreaView>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <Text style={[styles.label, { color: c.textSecondary }]}>Categorie</Text>
+        <Text style={[styles.label, { color: c.textSecondary }]}>{t.categoryLabel}</Text>
         <View style={styles.cats}>
           {CATEGORIES.map((cat) => {
             const meta = COMPLAINT_CATEGORY[cat];
@@ -151,27 +153,27 @@ export default function NewComplaintScreen() {
                 onPress={() => setCategory(cat)}
                 style={[styles.cat, { borderColor: active ? c.brand : c.line, backgroundColor: active ? c.brandWash : c.surface }]}>
                 <Ionicons name={meta.icon} size={15} color={active ? c.brand : c.textSecondary} />
-                <Text style={{ fontFamily: Fonts.semibold, fontSize: 12.5, color: active ? c.brand : c.text }}>{meta.label}</Text>
+                <Text style={{ fontFamily: Fonts.semibold, fontSize: 12.5, color: active ? c.brand : c.text }}>{meta.label[loc]}</Text>
               </Pressable>
             );
           })}
         </View>
 
         <Field
-          label="Titlu"
+          label={t.titleLabel}
           icon="pricetag-outline"
-          placeholder="Pe scurt, care e problema?"
+          placeholder={t.titlePlaceholder}
           value={title}
           onChangeText={setTitle}
           maxLength={LIMITS.title}
         />
 
         <View style={styles.group}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Descriere</Text>
+          <Text style={[styles.label, { color: c.textSecondary }]}>{t.descriptionLabel}</Text>
           <TextInput
             value={description}
             onChangeText={setDescription}
-            placeholder="Descrie problema: ce, unde, de când…"
+            placeholder={t.descriptionPlaceholder}
             placeholderTextColor={c.textSecondary}
             underlineColorAndroid="transparent"
             maxLength={LIMITS.description}
@@ -187,7 +189,7 @@ export default function NewComplaintScreen() {
             onPress={() =>
               spell.mutate(description, {
                 onSuccess: setDescription,
-                onError: () => setError('Corectarea nu e disponibilă acum. Poți trimite textul așa cum e.'),
+                onError: () => setError(t.spellFailed),
               })
             }
             disabled={description.trim().length < 10 || spell.isPending}
@@ -195,30 +197,30 @@ export default function NewComplaintScreen() {
             style={[styles.spell, { opacity: description.trim().length < 10 || spell.isPending ? 0.45 : 1 }]}>
             <Ionicons name="sparkles-outline" size={14} color={c.brand} />
             <Text style={[styles.spellText, { color: c.brand }]}>
-              {spell.isPending ? 'Se verifică…' : 'Verifică textul'}
+              {spell.isPending ? t.spellPending : t.spellCheck}
             </Text>
           </Pressable>
         </View>
 
         {needsLocation ? (
           <View style={styles.group}>
-            <Text style={[styles.label, { color: c.textSecondary }]}>Locație</Text>
+            <Text style={[styles.label, { color: c.textSecondary }]}>{t.locationLabel}</Text>
             <Field
               icon="location-outline"
-              placeholder="Adresa (ex. str. Independenței 24)"
+              placeholder={t.addressPlaceholder}
               value={address}
               onChangeText={setAddress}
               maxLength={LIMITS.address}
             />
             <View style={[styles.map, { backgroundColor: c.brandWash, borderColor: c.line }]}>
               <Ionicons name="map-outline" size={26} color={c.brand} />
-              <Text style={[styles.mapText, { color: c.textSecondary }]}>Alege locația pe hartă</Text>
+              <Text style={[styles.mapText, { color: c.textSecondary }]}>{t.pickOnMap}</Text>
             </View>
           </View>
         ) : null}
 
         <View style={styles.group}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Fotografie (opțional)</Text>
+          <Text style={[styles.label, { color: c.textSecondary }]}>{t.photoLabel}</Text>
           {photo ? (
             <View style={styles.photoWrap}>
               <Image source={{ uri: photo }} style={styles.photo} contentFit="cover" />
@@ -229,7 +231,7 @@ export default function NewComplaintScreen() {
           ) : (
             <Pressable onPress={pickPhoto} style={[styles.upload, { borderColor: c.line }]}>
               <Ionicons name="camera-outline" size={22} color={c.brand} />
-              <Text style={[styles.uploadText, { color: c.textSecondary }]}>Adaugă o fotografie</Text>
+              <Text style={[styles.uploadText, { color: c.textSecondary }]}>{t.addPhoto}</Text>
             </Pressable>
           )}
         </View>
@@ -242,12 +244,10 @@ export default function NewComplaintScreen() {
         ) : null}
 
         {!canSubmit ? (
-          <Text style={[styles.hint, { color: c.textSecondary }]}>
-            Alege o categorie și completează titlul (min. 5 caractere) și descrierea (min. 10).
-          </Text>
+          <Text style={[styles.hint, { color: c.textSecondary }]}>{t.hint}</Text>
         ) : null}
         <Button
-          title={create.isPending ? 'Se trimite…' : 'Trimite sesizarea'}
+          title={create.isPending ? t.submitting : t.submit}
           icon="paper-plane-outline"
           onPress={submit}
           disabled={!canSubmit || create.isPending}

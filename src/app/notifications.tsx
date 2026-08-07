@@ -6,22 +6,21 @@ import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/api/hooks';
-import type { ComplaintStatusPayload, Notification, NotificationKind, ParsedPayload } from '@/api/types';
+import type { ComplaintStatusPayload, Locale, Notification, NotificationKind, ParsedPayload } from '@/api/types';
 import { Plaque } from '@/components/ui/plaque';
 import { EmptyState, ErrorView, LoadingView } from '@/components/ui/state-views';
 import { COMPLAINT_STATUS, WORK_TYPE } from '@/constants/civic';
 import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useLocale, useT } from '@/i18n';
+import { complaintDetailText } from '@/i18n/complaintDetail';
 import { formatDate } from '@/lib/date';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
+/** This screen's copy in one language — `present` runs outside the component. */
+type Copy = (typeof complaintDetailText)['ro'];
 
-const KINDS: { key: NotificationKind | 'ALL'; label: string }[] = [
-  { key: 'ALL', label: 'Toate' },
-  { key: 'COMPLAINT_STATUS', label: 'Sesizările mele' },
-  { key: 'MANUAL', label: 'Primărie' },
-  { key: 'PARSED', label: 'Utilități' },
-];
+const KINDS: (NotificationKind | 'ALL')[] = ['ALL', 'COMPLAINT_STATUS', 'MANUAL', 'PARSED'];
 
 /** Where a notification leads. MANUAL announcements are self-contained, so: null. */
 type Target = { kind: 'route'; id: string } | { kind: 'url'; url: string } | null;
@@ -39,35 +38,35 @@ type Presented = {
 };
 
 /** The frontend composes titles/bodies for PARSED and COMPLAINT_STATUS from payload. */
-function present(n: Notification): Presented {
+function present(n: Notification, t: Copy, loc: Locale): Presented {
   if (n.kind === 'PARSED' && n.payload && 'workType' in n.payload) {
     const p = n.payload as ParsedPayload;
     return {
-      source: `Premier Energy · ${WORK_TYPE[p.workType]}`,
+      source: t.outageSource(WORK_TYPE[p.workType][loc]),
       icon: 'flash-outline',
       bg: '#FBEFD9',
       fg: '#8A5300',
-      title: WORK_TYPE[p.workType],
+      title: WORK_TYPE[p.workType][loc],
       body: p.segments.map((s) => `${s.streets}  ·  ${s.timeStart}–${s.timeEnd}`).join('\n'),
       target: { kind: 'url', url: p.url },
-      action: 'Vezi anunțul complet',
+      action: t.outageAction,
     };
   }
   if (n.kind === 'COMPLAINT_STATUS' && n.payload && 'complaintId' in n.payload) {
     const p = n.payload as ComplaintStatusPayload;
     return {
-      source: 'Primăria Cahul',
+      source: t.cityHall,
       icon: 'clipboard-outline',
       bg: '#EAF6F8',
       fg: '#0E7490',
-      title: `Sesizare: ${COMPLAINT_STATUS[p.status].label}`,
-      body: p.adminResponse ?? `Statusul sesizării „${p.complaintTitle}” s-a actualizat.`,
+      title: t.complaintStatusTitle(COMPLAINT_STATUS[p.status].label[loc]),
+      body: p.adminResponse ?? t.complaintStatusBody(p.complaintTitle),
       target: { kind: 'route', id: p.complaintId },
-      action: 'Vezi sesizarea',
+      action: t.complaintAction,
     };
   }
   return {
-    source: 'Primăria Cahul',
+    source: t.cityHall,
     icon: 'megaphone-outline',
     bg: '#EAF6F8',
     fg: '#0E7490',
@@ -79,6 +78,8 @@ function present(n: Notification): Presented {
 
 export default function NotificationsScreen() {
   const c = useTheme();
+  const t = useT(complaintDetailText);
+  const loc = useLocale();
   const { data: items, isLoading, isError, refetch } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
@@ -93,18 +94,18 @@ export default function NotificationsScreen() {
     <View style={{ flex: 1, backgroundColor: c.background }}>
       <SafeAreaView edges={['top']} style={{ backgroundColor: c.brand }}>
         <View style={styles.bar}>
-          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityRole="button" accessibilityLabel="Înapoi">
+          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityRole="button" accessibilityLabel={t.back}>
             <Ionicons name="arrow-back" size={24} color={c.onBrand} />
           </Pressable>
-          <Text style={[styles.barTitle, { color: c.onBrand }]}>Notificări</Text>
+          <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.notificationsTitle}</Text>
           {unread > 0 ? (
             <Pressable
               onPress={() => markAll.mutate()}
               hitSlop={10}
               accessibilityRole="button"
-              accessibilityLabel={`Marchează toate ca citite, ${unread} necitite`}
+              accessibilityLabel={t.markAllA11y(unread)}
               style={styles.markAll}>
-              <Text style={[styles.markAllText, { color: c.onBrand }]}>Marchează toate</Text>
+              <Text style={[styles.markAllText, { color: c.onBrand }]}>{t.markAll}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -112,16 +113,16 @@ export default function NotificationsScreen() {
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsWrap} contentContainerStyle={styles.tabs}>
         {KINDS.map((k) => {
-          const active = kind === k.key;
+          const active = kind === k;
           return (
             <Pressable
-              key={k.key}
-              onPress={() => setKind(k.key)}
+              key={k}
+              onPress={() => setKind(k)}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
               style={[styles.tab, { borderColor: active ? c.brand : c.line, backgroundColor: active ? c.brand : c.surface }]}>
               <Text style={{ fontFamily: Fonts.semibold, fontSize: 12.5, color: active ? c.onBrand : c.textSecondary }}>
-                {k.label}
+                {t.kinds[k]}
               </Text>
             </Pressable>
           );
@@ -134,7 +135,7 @@ export default function NotificationsScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         renderItem={({ item: n }) => {
-          const v = present(n);
+          const v = present(n, t, loc);
           const target = v.target;
           // Reading it is what marks it read — the badge drops as you work the list.
           const open = target
@@ -165,7 +166,7 @@ export default function NotificationsScreen() {
               <Text style={[styles.title, { color: c.text }]}>{v.title}</Text>
               <Text style={[styles.body, { color: c.textSecondary }]}>{v.body}</Text>
               <View style={styles.foot}>
-                <Text style={[styles.date, { color: c.muted }]}>{formatDate(n.eventDate ?? n.createdAt)}</Text>
+                <Text style={[styles.date, { color: c.muted }]}>{formatDate(n.eventDate ?? n.createdAt, loc)}</Text>
                 {target ? (
                   <View style={styles.cta}>
                     <Text style={[styles.ctaText, { color: c.brand }]}>{v.action}</Text>
@@ -182,15 +183,11 @@ export default function NotificationsScreen() {
         }}
         ListEmptyComponent={
           isLoading ? (
-            <LoadingView label="Se încarcă notificările…" />
+            <LoadingView label={t.loadingNotifications} />
           ) : isError ? (
             <ErrorView onRetry={() => refetch()} />
           ) : (
-            <EmptyState
-              icon="notifications-off-outline"
-              title="Nicio notificare"
-              message="Aici vei primi anunțuri de la primărie și de la Premier Energy."
-            />
+            <EmptyState icon="notifications-off-outline" title={t.emptyTitle} message={t.emptyMessage} />
           )
         }
       />

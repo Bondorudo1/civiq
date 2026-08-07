@@ -19,12 +19,16 @@ import { EmptyState, LoadingView } from '@/components/ui/state-views';
 import { POST_TYPE } from '@/constants/civic';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useLocale, useT } from '@/i18n';
+import { adminDetailText } from '@/i18n/adminDetail';
 import { formatDate } from '@/lib/date';
 
 const TYPES = Object.keys(POST_TYPE) as PostType[];
 
 export default function AdminEditPostScreen() {
   const c = useTheme();
+  const t = useT(adminDetailText);
+  const loc = useLocale();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: post, isLoading } = usePost(id);
 
@@ -45,13 +49,13 @@ export default function AdminEditPostScreen() {
       <View style={{ flex: 1, backgroundColor: c.background }}>
         <SafeAreaView edges={['top']} style={{ backgroundColor: c.brandDeep }}>
           <View style={styles.bar}>
-            <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Înapoi">
+            <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel={t.back}>
               <Ionicons name="arrow-back" size={24} color={c.onBrand} />
             </Pressable>
-            <Text style={[styles.barTitle, { color: c.onBrand }]}>Proiect</Text>
+            <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.postBar}</Text>
           </View>
         </SafeAreaView>
-        {isLoading ? <LoadingView /> : <EmptyState icon="alert-circle-outline" title="Proiect negăsit" />}
+        {isLoading ? <LoadingView /> : <EmptyState icon="alert-circle-outline" title={t.postNotFound} />}
       </View>
     );
   }
@@ -70,7 +74,7 @@ export default function AdminEditPostScreen() {
     setError(null);
     update.mutate(
       { id: post.id, title: nextTitle.trim(), body: nextBody.trim(), type: nextType },
-      { onSuccess: () => router.back(), onError: (e) => fail(e, 'Nu am putut salva.') },
+      { onSuccess: () => router.back(), onError: (e) => fail(e, t.saveFailed) },
     );
   };
 
@@ -78,27 +82,23 @@ export default function AdminEditPostScreen() {
     setError(null);
     close.mutate(
       { id: post.id, verdict },
-      { onSuccess: () => setVerdict(''), onError: (e) => fail(e, 'Nu am putut închide proiectul.') },
+      { onSuccess: () => setVerdict(''), onError: (e) => fail(e, t.closeFailed) },
     );
   };
 
   const confirmDelete = () => {
-    Alert.alert(
-      'Ștergi proiectul?',
-      'Se șterg și toate comentariile, răspunsurile și reacțiile. Acțiunea nu poate fi anulată.',
-      [
-        { text: 'Anulează', style: 'cancel' },
-        {
-          text: 'Șterge',
-          style: 'destructive',
-          onPress: () =>
-            remove.mutate(post.id, {
-              onSuccess: () => router.back(),
-              onError: (e) => fail(e, 'Nu am putut șterge proiectul.'),
-            }),
-        },
-      ],
-    );
+    Alert.alert(t.deletePostTitle, t.deletePostBody, [
+      { text: t.cancel, style: 'cancel' },
+      {
+        text: t.delete,
+        style: 'destructive',
+        onPress: () =>
+          remove.mutate(post.id, {
+            onSuccess: () => router.back(),
+            onError: (e) => fail(e, t.deletePostFailed),
+          }),
+      },
+    ]);
   };
 
   return (
@@ -107,44 +107,44 @@ export default function AdminEditPostScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView edges={['top']} style={{ backgroundColor: c.brandDeep }}>
         <View style={styles.bar}>
-          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Înapoi">
+          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel={t.back}>
             <Ionicons name="arrow-back" size={24} color={c.onBrand} />
           </Pressable>
-          <Text style={[styles.barTitle, { color: c.onBrand }]}>Editează proiectul</Text>
-          <Text style={styles.barState}>{closed ? 'ÎNCHIS' : 'DESCHIS'}</Text>
+          <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.editPostBar}</Text>
+          <Text style={styles.barState}>{closed ? t.stateClosed : t.stateOpen}</Text>
         </View>
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Text style={[styles.stats, { color: c.textSecondary }]}>
-          {post.likesCount} susțin · {post.dislikesCount} împotrivă · {post.commentsCount} comentarii
+          {t.stats(post.likesCount, post.dislikesCount, post.commentsCount)}
         </Text>
 
-        <Text style={[styles.label, { color: c.textSecondary }]}>Tip</Text>
+        <Text style={[styles.label, { color: c.textSecondary }]}>{t.fieldType}</Text>
         <View style={styles.chips}>
-          {TYPES.map((t) => {
-            const meta = POST_TYPE[t];
-            const active = nextType === t;
+          {TYPES.map((pt) => {
+            const meta = POST_TYPE[pt];
+            const active = nextType === pt;
             return (
               <Pressable
-                key={t}
-                onPress={() => setType(t)}
+                key={pt}
+                onPress={() => setType(pt)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
                 style={[styles.chip, { borderColor: active ? c.brand : c.line, backgroundColor: active ? c.brandWash : c.surface }]}>
                 <Ionicons name={meta.icon} size={15} color={active ? c.brand : c.textSecondary} />
                 <Text style={{ fontFamily: Fonts.semibold, fontSize: 12.5, color: active ? c.brand : c.text }}>
-                  {meta.label}
+                  {meta.label[loc]}
                 </Text>
               </Pressable>
             );
           })}
         </View>
 
-        <Field label="Titlu" icon="pricetag-outline" value={nextTitle} onChangeText={setTitle} maxLength={200} />
+        <Field label={t.fieldTitle} icon="pricetag-outline" value={nextTitle} onChangeText={setTitle} maxLength={200} />
 
         <View style={styles.group}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Conținut</Text>
+          <Text style={[styles.label, { color: c.textSecondary }]}>{t.fieldBody}</Text>
           <TextInput
             value={nextBody}
             onChangeText={setBody}
@@ -159,13 +159,11 @@ export default function AdminEditPostScreen() {
             ]}
           />
           {/* Editing a post drops its cached AI translations — the backend recomputes them. */}
-          <Text style={[styles.note, { color: c.muted }]}>
-            Modificarea textului resetează traducerile salvate.
-          </Text>
+          <Text style={[styles.note, { color: c.muted }]}>{t.translationsNote}</Text>
         </View>
 
         <Button
-          title={update.isPending ? 'Se salvează…' : 'Salvează modificările'}
+          title={update.isPending ? t.saving : t.saveChanges}
           icon="checkmark"
           onPress={save}
           disabled={!canSave || update.isPending}
@@ -174,32 +172,28 @@ export default function AdminEditPostScreen() {
         {/* Lifecycle. A consultation can't be closed without telling people what was decided. */}
         {closed ? (
           <Plaque borderColor={c.green} style={styles.card}>
-            <Text style={[styles.sectionLabel, { color: c.green }]}>VERDICT PUBLICAT</Text>
+            <Text style={[styles.sectionLabel, { color: c.green }]}>{t.verdictPublished}</Text>
             <Text style={[styles.body, { color: c.text }]}>{post.verdict}</Text>
             {post.closedAt ? (
-              <Text style={[styles.note, { color: c.muted }]}>Închis pe {formatDate(post.closedAt)}</Text>
+              <Text style={[styles.note, { color: c.muted }]}>{t.closedOn(formatDate(post.closedAt, loc))}</Text>
             ) : null}
-            <Text style={[styles.note, { color: c.textSecondary }]}>
-              Redeschiderea șterge verdictul — istoricul nu se păstrează.
-            </Text>
+            <Text style={[styles.note, { color: c.textSecondary }]}>{t.reopenWarning}</Text>
             <Button
-              title={reopen.isPending ? 'Se redeschide…' : 'Redeschide consultarea'}
+              title={reopen.isPending ? t.reopening : t.reopen}
               variant="secondary"
               icon="lock-open-outline"
-              onPress={() => reopen.mutate(post.id, { onError: (e) => fail(e, 'Nu am putut redeschide.') })}
+              onPress={() => reopen.mutate(post.id, { onError: (e) => fail(e, t.reopenFailed) })}
               disabled={reopen.isPending}
             />
           </Plaque>
         ) : (
           <Plaque style={styles.card}>
-            <Text style={[styles.sectionLabel, { color: c.brand }]}>ÎNCHIDE CONSULTAREA</Text>
-            <Text style={[styles.note, { color: c.textSecondary }]}>
-              Verdictul este obligatoriu și rămâne vizibil pe pagina proiectului.
-            </Text>
+            <Text style={[styles.sectionLabel, { color: c.brand }]}>{t.closeSection}</Text>
+            <Text style={[styles.note, { color: c.textSecondary }]}>{t.verdictNote}</Text>
             <TextInput
               value={verdict}
               onChangeText={setVerdict}
-              placeholder="Ce s-a decis în urma consultării?"
+              placeholder={t.verdictPlaceholder}
               placeholderTextColor={c.textSecondary}
               underlineColorAndroid="transparent"
               maxLength={5000}
@@ -211,13 +205,13 @@ export default function AdminEditPostScreen() {
               ]}
             />
             <Button
-              title={close.isPending ? 'Se închide…' : 'Închide cu verdict'}
+              title={close.isPending ? t.closing : t.closeWithVerdict}
               icon="lock-closed-outline"
               onPress={doClose}
               disabled={verdict.trim().length < 10 || close.isPending}
             />
             {verdict.trim().length > 0 && verdict.trim().length < 10 ? (
-              <Text style={[styles.note, { color: c.accentPressed }]}>Minim 10 caractere.</Text>
+              <Text style={[styles.note, { color: c.accentPressed }]}>{t.verdictTooShort}</Text>
             ) : null}
           </Plaque>
         )}
@@ -226,7 +220,7 @@ export default function AdminEditPostScreen() {
 
         <Pressable onPress={confirmDelete} disabled={remove.isPending} style={styles.delete} accessibilityRole="button">
           <Ionicons name="trash-outline" size={16} color={c.accentPressed} />
-          <Text style={[styles.deleteText, { color: c.accentPressed }]}>Șterge proiectul</Text>
+          <Text style={[styles.deleteText, { color: c.accentPressed }]}>{t.deletePost}</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>

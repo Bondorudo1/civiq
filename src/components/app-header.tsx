@@ -6,6 +6,8 @@ import { useUnreadCount } from '@/api/hooks';
 import Logo from '@/assets/images/logo.svg';
 import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useT } from '@/i18n';
+import { sharedText } from '@/i18n/shared';
 
 /**
  * Enamel-civic top app bar: teal region (the "painted sign"), title on the left,
@@ -13,6 +15,7 @@ import { useTheme } from '@/hooks/use-theme';
  */
 export function AppHeader({ title, showLogo, onBell }: { title: string; showLogo?: boolean; onBell?: () => void }) {
   const c = useTheme();
+  const t = useT(sharedText);
   const unread = useUnreadCount().data ?? 0;
   return (
     <SafeAreaView edges={['top']} style={{ backgroundColor: c.brand }}>
@@ -31,7 +34,7 @@ export function AppHeader({ title, showLogo, onBell }: { title: string; showLogo
           hitSlop={10}
           onPress={onBell}
           accessibilityRole="button"
-          accessibilityLabel={unread > 0 ? `Notificări, ${unread} necitite` : 'Notificări'}>
+          accessibilityLabel={unread > 0 ? t.bellUnread(unread) : t.bell}>
           <View>
             <Ionicons name="notifications-outline" size={24} color={c.onBrand} />
             {unread > 0 ? (

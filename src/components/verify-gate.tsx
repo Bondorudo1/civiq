@@ -5,15 +5,23 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useVerification } from '@/hooks/use-verification';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useT } from '@/i18n';
+import { type GateAction, sharedText } from '@/i18n/shared';
+
+export type { GateAction };
 
 /**
  * Shown in place of a gated action. The affordance stays visible and explains
  * itself — a hidden control reads as a broken app, an explained one teaches the
  * rule and offers the way through.
+ *
+ * `action` names the gated deed ('comment' | 'participate' | 'complain'), not the
+ * word for it: the sentences below need a verb in the reader's language.
  */
-export function VerifyGate({ action, compact }: { action: string; compact?: boolean }) {
+export function VerifyGate({ action, compact }: { action: GateAction; compact?: boolean }) {
   const c = useTheme();
   const router = useRouter();
+  const t = useT(sharedText);
   const { isPending, isRejected } = useVerification();
 
   const waiting = isPending;
@@ -21,10 +29,10 @@ export function VerifyGate({ action, compact }: { action: string; compact?: bool
   const wash = waiting ? '#FBF3E2' : isRejected ? c.accentWash : c.brandWash;
 
   const message = waiting
-    ? `Cererea ta e la primărie. Vei putea ${action} imediat ce este aprobată.`
+    ? t.gatePendingBody(action)
     : isRejected
-      ? `Cererea a fost respinsă. Corectează datele ca să poți ${action}.`
-      : `Doar locuitorii verificați pot ${action}. Durează un minut.`;
+      ? t.gateRejectedBody(action)
+      : t.gateBody(action);
 
   return (
     <View style={[compact ? styles.compact : styles.card, { backgroundColor: wash, borderColor: tone }]}>
@@ -35,7 +43,7 @@ export function VerifyGate({ action, compact }: { action: string; compact?: bool
           color={tone}
         />
         <Text style={[compact ? styles.compactText : styles.title, { color: tone }]}>
-          {waiting ? 'Verificare în curs' : isRejected ? 'Verificare respinsă' : 'Verifică-te ca locuitor'}
+          {waiting ? t.gatePendingTitle : isRejected ? t.gateRejectedTitle : t.gateTitle}
         </Text>
       </View>
       <Text style={[styles.body, { color: c.textSecondary }]}>{message}</Text>
@@ -45,7 +53,7 @@ export function VerifyGate({ action, compact }: { action: string; compact?: bool
           accessibilityRole="button"
           style={({ pressed }) => [styles.button, { backgroundColor: pressed ? c.brandDeep : c.brand }]}>
           <Text style={[styles.buttonText, { color: c.onBrand }]}>
-            {isRejected ? 'Trimite din nou' : 'Verifică-mă'}
+            {isRejected ? t.gateResubmit : t.gateVerify}
           </Text>
           <Ionicons name="arrow-forward" size={15} color={c.onBrand} />
         </Pressable>

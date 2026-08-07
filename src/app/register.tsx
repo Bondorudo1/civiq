@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRegister } from '@/api/hooks';
 import Logo from '@/assets/images/logo.svg';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { authText } from '@/i18n/auth';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/store/auth';
 
@@ -21,14 +22,16 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [locale, setLocale] = useState<'ro' | 'ru'>('ro');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<'EMAIL_TAKEN' | 'VALIDATION_ERROR' | 'FAILED' | null>(null);
   const register = useRegister();
+  const t = authText[locale];
 
   const back = () => (step === 0 ? router.back() : setStep((s) => s - 1));
   const next = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
 
   // POST /auth/register always issues role CITIZEN; 409 EMAIL_TAKEN is the one
   // failure worth naming precisely, since the fix is to go back a step.
+  // The cause is held, not the sentence, so step 2 can still change the language.
   const finish = () =>
     register.mutate(
       { email: email.trim().toLowerCase(), password, fullName: name.trim(), locale },
@@ -36,13 +39,7 @@ export default function RegisterScreen() {
         onSuccess: (res) => signIn(res.accessToken, res.user.role),
         onError: (e: unknown) => {
           const code = (e as { code?: string })?.code;
-          setError(
-            code === 'EMAIL_TAKEN'
-              ? 'Există deja un cont cu acest email.'
-              : code === 'VALIDATION_ERROR'
-                ? 'Verifică datele: parola trebuie să aibă minim 8 caractere.'
-                : 'Nu am putut crea contul. Încearcă din nou.',
-          );
+          setError(code === 'EMAIL_TAKEN' || code === 'VALIDATION_ERROR' ? code : 'FAILED');
           setStep(1);
         },
       },
@@ -56,12 +53,10 @@ export default function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.bar}>
-          <Pressable onPress={back} hitSlop={12} accessibilityRole="button" accessibilityLabel="Înapoi">
+          <Pressable onPress={back} hitSlop={12} accessibilityRole="button" accessibilityLabel={t.back}>
             <Ionicons name="arrow-back" size={24} color={c.text} />
           </Pressable>
-          <Text style={[styles.step, { color: c.textSecondary }]}>
-            Pasul {step + 1} din {TOTAL_STEPS}
-          </Text>
+          <Text style={[styles.step, { color: c.textSecondary }]}>{t.stepOf(step + 1, TOTAL_STEPS)}</Text>
         </View>
 
         <View style={[styles.track, { backgroundColor: c.line }]}>
@@ -83,13 +78,13 @@ export default function RegisterScreen() {
 
           {step === 0 && (
             <>
-              <Text style={[styles.title, { color: c.text }]}>Cum te cheamă?</Text>
+              <Text style={[styles.title, { color: c.text }]}>{t.nameTitle}</Text>
               <View style={styles.field}>
-                <Text style={[styles.label, { color: c.textSecondary }]}>Nume complet</Text>
+                <Text style={[styles.label, { color: c.textSecondary }]}>{t.nameLabel}</Text>
                 <TextInput
                   value={name}
                   onChangeText={setName}
-                  placeholder="Ion Popescu"
+                  placeholder={t.namePlaceholder}
                   placeholderTextColor={c.muted}
                   style={[styles.input, { borderColor: c.line, color: c.text, backgroundColor: c.surface }]}
                 />
@@ -99,13 +94,13 @@ export default function RegisterScreen() {
 
           {step === 1 && (
             <>
-              <Text style={[styles.title, { color: c.text }]}>Date de conectare</Text>
+              <Text style={[styles.title, { color: c.text }]}>{t.credentialsTitle}</Text>
               <View style={styles.field}>
-                <Text style={[styles.label, { color: c.textSecondary }]}>Email</Text>
+                <Text style={[styles.label, { color: c.textSecondary }]}>{t.emailLabel}</Text>
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="nume@exemplu.md"
+                  placeholder={t.emailPlaceholder}
                   placeholderTextColor={c.muted}
                   autoCapitalize="none"
                   keyboardType="email-address"
@@ -113,7 +108,7 @@ export default function RegisterScreen() {
                 />
               </View>
               <View style={styles.field}>
-                <Text style={[styles.label, { color: c.textSecondary }]}>Parolă</Text>
+                <Text style={[styles.label, { color: c.textSecondary }]}>{t.passwordLabel}</Text>
                 <TextInput
                   value={password}
                   onChangeText={setPassword}
@@ -122,12 +117,18 @@ export default function RegisterScreen() {
                   secureTextEntry
                   style={[styles.input, { borderColor: c.line, color: c.text, backgroundColor: c.surface }]}
                 />
-                <Text style={[styles.help, { color: c.textSecondary }]}>Minim 8 caractere.</Text>
+                <Text style={[styles.help, { color: c.textSecondary }]}>{t.passwordHelp}</Text>
               </View>
               {error ? (
                 <View style={[styles.error, { backgroundColor: c.accentWash, borderColor: c.accent }]}>
                   <Ionicons name="alert-circle-outline" size={16} color={c.accentPressed} />
-                  <Text style={[styles.errorText, { color: c.accentPressed }]}>{error}</Text>
+                  <Text style={[styles.errorText, { color: c.accentPressed }]}>
+                    {error === 'EMAIL_TAKEN'
+                      ? t.errEmailTaken
+                      : error === 'VALIDATION_ERROR'
+                        ? t.errValidation
+                        : t.errRegisterFailed}
+                  </Text>
                 </View>
               ) : null}
             </>
@@ -135,7 +136,7 @@ export default function RegisterScreen() {
 
           {step === 2 && (
             <>
-              <Text style={[styles.title, { color: c.text }]}>Ce limbă preferi?</Text>
+              <Text style={[styles.title, { color: c.text }]}>{t.localeTitle}</Text>
               <View style={styles.localeRow}>
                 {(['ro', 'ru'] as const).map((l) => {
                   const active = locale === l;
@@ -153,7 +154,7 @@ export default function RegisterScreen() {
                           fontSize: 15,
                           color: active ? c.brand : c.text,
                         }}>
-                        {l === 'ro' ? 'Română' : 'Русский'}
+                        {l === 'ro' ? t.langRo : t.langRu}
                       </Text>
                       {active && <Ionicons name="checkmark-circle" size={20} color={c.brand} />}
                     </Pressable>
@@ -165,10 +166,8 @@ export default function RegisterScreen() {
 
           {step === 3 && (
             <>
-              <Text style={[styles.title, styles.centerText, { color: c.text }]}>Bine ai venit în CiviQ!</Text>
-              <Text style={[styles.welcomeBody, { color: c.textSecondary }]}>
-                Contul tău este gata. Hai să facem orașul mai bun, împreună.
-              </Text>
+              <Text style={[styles.title, styles.centerText, { color: c.text }]}>{t.doneTitle}</Text>
+              <Text style={[styles.welcomeBody, { color: c.textSecondary }]}>{t.doneBody}</Text>
             </>
           )}
         </View>
@@ -176,14 +175,14 @@ export default function RegisterScreen() {
         <View style={styles.footer}>
           {step < 3 ? (
             <Pressable onPress={next} style={styles.nextBtn} accessibilityRole="button">
-              <Text style={[styles.nextText, { color: c.brand }]}>Mai departe</Text>
+              <Text style={[styles.nextText, { color: c.brand }]}>{t.next}</Text>
               <Ionicons name="arrow-forward" size={18} color={c.brand} />
             </Pressable>
           ) : (
             <Pressable
               onPress={finish}
               style={({ pressed }) => [styles.finishBtn, { backgroundColor: pressed ? c.brandDeep : c.brand }]}>
-              <Text style={[styles.finishText, { color: c.onBrand }]}>Intră în aplicație</Text>
+              <Text style={[styles.finishText, { color: c.onBrand }]}>{t.enterApp}</Text>
             </Pressable>
           )}
         </View>

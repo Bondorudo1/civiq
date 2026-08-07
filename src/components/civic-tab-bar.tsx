@@ -13,6 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Fonts } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useT } from '@/i18n';
+import { tabsText, type Shell } from '@/i18n/tabs';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -23,6 +25,8 @@ type CivicTabBarProps = {
   navigation: { emit: (...args: any[]) => any; navigate: (...args: any[]) => void };
   /** Route name → filled icon. Defaults to the citizen shell's set. */
   icons?: Record<string, IoniconName>;
+  /** Which label set to use — both shells have an `index` and a `proiecte`. */
+  shell?: Shell;
 };
 
 // Filled name for the active (raised) token; `-outline` is appended when inactive.
@@ -95,9 +99,18 @@ function TabItem({
 }
 
 /** Bottom nav — variant 7: the active tab lifts into a filled teal token, label always shown. */
-export function CivicTabBar({ state, descriptors, navigation, icons = ICONS }: CivicTabBarProps) {
+export function CivicTabBar({
+  state,
+  descriptors,
+  navigation,
+  icons = ICONS,
+  shell = 'citizen',
+}: CivicTabBarProps) {
   const c = useTheme();
   const insets = useSafeAreaInsets();
+  // Resolved here, not from `options.title`: the navigator caches those and the
+  // bar would stay in the old language after a switch.
+  const labels = useT(tabsText)[shell];
 
   return (
     <View
@@ -112,7 +125,7 @@ export function CivicTabBar({ state, descriptors, navigation, icons = ICONS }: C
         return (
           <TabItem
             key={route.key}
-            label={(options.title ?? route.name) as string}
+            label={labels[route.name as keyof typeof labels] ?? options.title ?? route.name}
             icon={icons[route.name] ?? 'ellipse'}
             focused={focused}
             onPress={() => {

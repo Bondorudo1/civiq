@@ -8,10 +8,14 @@ import { Plaque } from '@/components/ui/plaque';
 import { EmptyState, ErrorView, LoadingView } from '@/components/ui/state-views';
 import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useLocale, useT } from '@/i18n';
+import { adminTabsText } from '@/i18n/adminTabs';
 import { formatDate } from '@/lib/date';
 
 export default function AdminNotificationsScreen() {
   const c = useTheme();
+  const t = useT(adminTabsText);
+  const loc = useLocale();
   const router = useRouter();
   const { data, isLoading, isError, refetch } = useAdminNotifications();
   const items = data ?? [];
@@ -19,7 +23,7 @@ export default function AdminNotificationsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
-      <AdminHeader title="Anunțuri" subtitle={`${mine} de la primărie · ${items.length} în total`} />
+      <AdminHeader title={t.noticesTitle} subtitle={t.noticesSubtitle(mine, items.length)} />
 
       <FlatList
         data={items}
@@ -38,11 +42,11 @@ export default function AdminNotificationsScreen() {
                   color={parsed ? '#8A5300' : c.brand}
                 />
                 <Text style={[styles.kind, { color: parsed ? '#8A5300' : c.brand }]}>
-                  {parsed ? 'PARSAT · PREMIER ENERGY' : 'ANUNȚ PRIMĂRIE'}
+                  {parsed ? t.noticeParsed : t.noticeManual}
                 </Text>
               </View>
               <Text style={[styles.title, { color: c.text }]} numberOfLines={2}>
-                {item.title ?? 'Întrerupere programată'}
+                {item.title ?? t.noticeFallbackTitle}
               </Text>
               {item.body ? (
                 <Text style={[styles.body, { color: c.textSecondary }]} numberOfLines={2}>
@@ -50,22 +54,22 @@ export default function AdminNotificationsScreen() {
                 </Text>
               ) : null}
               <Text style={[styles.date, { color: c.muted }]}>
-                {formatDate(item.eventDate ?? item.createdAt)}
+                {formatDate(item.eventDate ?? item.createdAt, loc)}
               </Text>
             </Plaque>
           );
         }}
         ListEmptyComponent={
           isLoading ? (
-            <LoadingView label="Se încarcă anunțurile…" />
+            <LoadingView label={t.noticesLoading} />
           ) : isError ? (
             <ErrorView onRetry={() => refetch()} />
           ) : (
             <EmptyState
               icon="megaphone-outline"
-              title="Niciun anunț"
-              message="Nu ai publicat anunțuri încă."
-              actionLabel="Anunț nou"
+              title={t.noticesEmptyTitle}
+              message={t.noticesEmptyMessage}
+              actionLabel={t.newNotice}
               onAction={() => router.push('/admin/notification/new')}
             />
           )
@@ -76,7 +80,7 @@ export default function AdminNotificationsScreen() {
         onPress={() => router.push('/admin/notification/new')}
         style={({ pressed }) => [styles.fab, { backgroundColor: pressed ? c.brand : c.brandDeep }]}
         accessibilityRole="button"
-        accessibilityLabel="Anunț nou">
+        accessibilityLabel={t.newNotice}>
         <Ionicons name="add" size={28} color={c.onBrand} />
       </Pressable>
     </View>

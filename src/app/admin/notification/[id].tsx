@@ -13,12 +13,16 @@ import { EmptyState, LoadingView } from '@/components/ui/state-views';
 import { WORK_TYPE } from '@/constants/civic';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useLocale, useT } from '@/i18n';
+import { adminDetailText } from '@/i18n/adminDetail';
 import { formatDate } from '@/lib/date';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export default function AdminEditNotificationScreen() {
   const c = useTheme();
+  const t = useT(adminDetailText);
+  const loc = useLocale();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading } = useAdminNotifications();
   const update = useAdminUpdateNotification();
@@ -34,10 +38,10 @@ export default function AdminEditNotificationScreen() {
   const bar = (
     <SafeAreaView edges={['top']} style={{ backgroundColor: c.brandDeep }}>
       <View style={styles.bar}>
-        <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Înapoi">
+        <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel={t.back}>
           <Ionicons name="arrow-back" size={24} color={c.onBrand} />
         </Pressable>
-        <Text style={[styles.barTitle, { color: c.onBrand }]}>Anunț</Text>
+        <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.notificationBar}</Text>
       </View>
     </SafeAreaView>
   );
@@ -46,7 +50,7 @@ export default function AdminEditNotificationScreen() {
     return (
       <View style={{ flex: 1, backgroundColor: c.background }}>
         {bar}
-        {isLoading ? <LoadingView /> : <EmptyState icon="alert-circle-outline" title="Anunț negăsit" />}
+        {isLoading ? <LoadingView /> : <EmptyState icon="alert-circle-outline" title={t.notificationNotFound} />}
       </View>
     );
   }
@@ -67,15 +71,15 @@ export default function AdminEditNotificationScreen() {
     setError((e as { message?: string })?.message ?? fallback);
 
   const confirmDelete = () => {
-    Alert.alert('Ștergi anunțul?', 'Dispare din lista tuturor locuitorilor. Acțiunea nu poate fi anulată.', [
-      { text: 'Anulează', style: 'cancel' },
+    Alert.alert(t.deleteNotificationTitle, t.deleteNotificationBody, [
+      { text: t.cancel, style: 'cancel' },
       {
-        text: 'Șterge',
+        text: t.delete,
         style: 'destructive',
         onPress: () =>
           remove.mutate(item.id, {
             onSuccess: () => router.back(),
-            onError: (e) => fail(e, 'Nu am putut șterge anunțul.'),
+            onError: (e) => fail(e, t.deleteNotificationFailed),
           }),
       },
     ]);
@@ -92,13 +96,11 @@ export default function AdminEditNotificationScreen() {
           <>
             <View style={[styles.notice, { backgroundColor: '#FBEFD9', borderColor: '#E0B457' }]}>
               <Ionicons name="flash-outline" size={16} color="#8A5300" />
-              <Text style={[styles.noticeText, { color: '#8A5300' }]}>
-                Preluat automat de la Premier Energy. Nu poate fi editat — doar șters, dacă a fost citit greșit.
-              </Text>
+              <Text style={[styles.noticeText, { color: '#8A5300' }]}>{t.parsedNotice}</Text>
             </View>
             <Plaque style={styles.card}>
               <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>
-                {payload ? WORK_TYPE[payload.workType].toUpperCase() : 'ÎNTRERUPERE'}
+                {payload ? WORK_TYPE[payload.workType][loc].toUpperCase() : t.outageFallback}
               </Text>
               {payload?.segments.map((s, i) => (
                 <View key={i} style={styles.segment}>
@@ -109,16 +111,16 @@ export default function AdminEditNotificationScreen() {
                 </View>
               ))}
               <Text style={[styles.note, { color: c.muted }]}>
-                {formatDate(item.eventDate ?? item.createdAt)}
+                {formatDate(item.eventDate ?? item.createdAt, loc)}
               </Text>
             </Plaque>
           </>
         ) : (
           <>
-            <Field label="Titlu" icon="pricetag-outline" value={nextTitle} onChangeText={setTitle} maxLength={200} />
+            <Field label={t.fieldTitle} icon="pricetag-outline" value={nextTitle} onChangeText={setTitle} maxLength={200} />
 
             <View style={styles.group}>
-              <Text style={[styles.label, { color: c.textSecondary }]}>Conținut</Text>
+              <Text style={[styles.label, { color: c.textSecondary }]}>{t.fieldBody}</Text>
               <TextInput
                 value={nextBody}
                 onChangeText={setBody}
@@ -135,7 +137,7 @@ export default function AdminEditNotificationScreen() {
             </View>
 
             <Field
-              label="Data evenimentului (opțional)"
+              label={t.eventDate}
               icon="calendar-outline"
               placeholder="2026-08-15"
               value={nextDate}
@@ -143,17 +145,17 @@ export default function AdminEditNotificationScreen() {
               maxLength={10}
             />
             {!dateValid ? (
-              <Text style={[styles.note, { color: c.accentPressed }]}>Formatul trebuie să fie AAAA-LL-ZZ.</Text>
+              <Text style={[styles.note, { color: c.accentPressed }]}>{t.dateFormat}</Text>
             ) : null}
 
             <Button
-              title={update.isPending ? 'Se salvează…' : 'Salvează modificările'}
+              title={update.isPending ? t.saving : t.saveChanges}
               icon="checkmark"
               onPress={() => {
                 setError(null);
                 update.mutate(
                   { id: item.id, title: nextTitle.trim(), body: nextBody.trim(), eventDate: nextDate.trim() || null },
-                  { onSuccess: () => router.back(), onError: (e) => fail(e, 'Nu am putut salva.') },
+                  { onSuccess: () => router.back(), onError: (e) => fail(e, t.saveFailed) },
                 );
               }}
               disabled={!canSave || update.isPending}
@@ -165,7 +167,7 @@ export default function AdminEditNotificationScreen() {
 
         <Pressable onPress={confirmDelete} disabled={remove.isPending} style={styles.delete} accessibilityRole="button">
           <Ionicons name="trash-outline" size={16} color={c.accentPressed} />
-          <Text style={[styles.deleteText, { color: c.accentPressed }]}>Șterge anunțul</Text>
+          <Text style={[styles.deleteText, { color: c.accentPressed }]}>{t.deleteNotification}</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>

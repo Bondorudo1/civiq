@@ -14,21 +14,19 @@ import { Tag } from '@/components/ui/tag';
 import { COMPLAINT_STATUS, DEPARTMENT } from '@/constants/civic';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useLocale, useT } from '@/i18n';
+import { complaintsText } from '@/i18n/complaints';
 import { responseWindow, shortDate } from '@/lib/date';
 import { shortRef } from '@/lib/id';
 
 type Filter = 'ALL' | ComplaintStatus;
 
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: 'ALL', label: 'Toate' },
-  { key: 'NEW', label: COMPLAINT_STATUS.NEW.label },
-  { key: 'IN_PROGRESS', label: COMPLAINT_STATUS.IN_PROGRESS.label },
-  { key: 'RESOLVED', label: COMPLAINT_STATUS.RESOLVED.label },
-  { key: 'REJECTED', label: COMPLAINT_STATUS.REJECTED.label },
-];
+const FILTERS: Filter[] = ['ALL', 'NEW', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'];
 
 export default function ContactScreen() {
   const c = useTheme();
+  const loc = useLocale();
+  const t = useT(complaintsText);
   const router = useRouter();
   const { data: complaints, isLoading, isError, refetch } = useComplaints();
   const [filter, setFilter] = useState<Filter>('ALL');
@@ -40,36 +38,36 @@ export default function ContactScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
-      <AppHeader title="Sesizări" onBell={() => router.push('/notifications')} />
+      <AppHeader title={t.title} onBell={() => router.push('/notifications')} />
 
       <View style={[styles.statHeader, { backgroundColor: c.brand }]}>
-        <Text style={styles.statSub}>Primăria răspunde în 30 de zile</Text>
+        <Text style={styles.statSub}>{t.responsePromise}</Text>
         <View style={styles.statRow}>
           <View style={styles.stat}>
             <Text style={styles.statNum}>{inWork}</Text>
-            <Text style={styles.statLabel}>în lucru</Text>
+            <Text style={styles.statLabel}>{t.statInWork}</Text>
           </View>
           <View style={[styles.stat, styles.statMid]}>
             <Text style={styles.statNum}>{awaiting}</Text>
-            <Text style={styles.statLabel}>te așteaptă</Text>
+            <Text style={styles.statLabel}>{t.statAwaiting}</Text>
           </View>
           <View style={styles.stat}>
             <Text style={styles.statNum}>{all.length}</Text>
-            <Text style={styles.statLabel}>total</Text>
+            <Text style={styles.statLabel}>{t.statTotal}</Text>
           </View>
         </View>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsWrap} contentContainerStyle={styles.tabs}>
         {FILTERS.map((f) => {
-          const active = filter === f.key;
+          const active = filter === f;
           return (
             <Pressable
-              key={f.key}
-              onPress={() => setFilter(f.key)}
+              key={f}
+              onPress={() => setFilter(f)}
               style={[styles.tab, { borderColor: active ? c.brand : c.line, backgroundColor: active ? c.brand : c.surface }]}>
               <Text style={{ fontFamily: Fonts.semibold, fontSize: 12.5, color: active ? c.onBrand : c.textSecondary }}>
-                {f.label}
+                {f === 'ALL' ? t.filterAll : COMPLAINT_STATUS[f].label[loc]}
               </Text>
             </Pressable>
           );
@@ -94,15 +92,13 @@ export default function ContactScreen() {
                   {cm.title}
                 </Text>
                 <Text style={[styles.dept, { color: c.textSecondary }]}>
-                  {DEPARTMENT[cm.category]} · <Text style={styles.mono}>depusă {shortDate(cm.createdAt)}</Text>
+                  {DEPARTMENT[cm.category][loc]} · <Text style={styles.mono}>{t.filed(shortDate(cm.createdAt, loc))}</Text>
                 </Text>
                 {w ? (
                   <View style={styles.window}>
                     <View style={styles.windowRow}>
-                      <Text style={[styles.windowLabel, { color: c.amber }]}>Termen de răspuns</Text>
-                      <Text style={[styles.windowVal, { color: c.amber }]}>
-                        {w.remaining} / {w.total} zile
-                      </Text>
+                      <Text style={[styles.windowLabel, { color: c.amber }]}>{t.responseTerm}</Text>
+                      <Text style={[styles.windowVal, { color: c.amber }]}>{t.windowValue(w.remaining, w.total)}</Text>
                     </View>
                     <View style={styles.track}>
                       <View style={[styles.fill, { width: `${(w.elapsed / w.total) * 100}%` }]} />
@@ -115,15 +111,15 @@ export default function ContactScreen() {
         }}
         ListEmptyComponent={
           isLoading ? (
-            <LoadingView label="Se încarcă sesizările…" />
+            <LoadingView label={t.loading} />
           ) : isError ? (
             <ErrorView onRetry={() => refetch()} />
           ) : (
             <EmptyState
               icon="chatbubbles-outline"
-              title="Nicio sesizare"
-              message={filter !== 'ALL' ? 'Nimic cu acest status.' : 'Ai observat o problemă în oraș? Anunță primăria.'}
-              actionLabel={filter === 'ALL' ? 'Sesizare nouă' : undefined}
+              title={t.emptyTitle}
+              message={filter !== 'ALL' ? t.emptyFiltered : t.emptyPrompt}
+              actionLabel={filter === 'ALL' ? t.newComplaint : undefined}
               onAction={filter === 'ALL' ? () => router.push('/complaint/new') : undefined}
             />
           )
@@ -134,7 +130,7 @@ export default function ContactScreen() {
         onPress={() => router.push('/complaint/new')}
         style={({ pressed }) => [styles.fab, { backgroundColor: pressed ? c.brandDeep : c.brand }]}
         accessibilityRole="button"
-        accessibilityLabel="Sesizare nouă">
+        accessibilityLabel={t.newComplaint}>
         <Ionicons name="add" size={28} color={c.onBrand} />
       </Pressable>
     </View>

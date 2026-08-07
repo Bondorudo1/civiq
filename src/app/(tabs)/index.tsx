@@ -15,6 +15,8 @@ import { WaterTexture } from '@/components/water-texture';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useVerification } from '@/hooks/use-verification';
+import { useLocale, useT } from '@/i18n';
+import { homeText } from '@/i18n/home';
 import { greeting } from '@/lib/date';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
@@ -51,6 +53,8 @@ function QuickAction({
 export default function HomeScreen() {
   const c = useTheme();
   const router = useRouter();
+  const loc = useLocale();
+  const t = useT(homeText);
   const { data: me } = useMe();
   const { canParticipate } = useVerification();
   const { data: posts, isLoading: postsLoading } = usePosts();
@@ -72,18 +76,18 @@ export default function HomeScreen() {
               <WaterTexture width={230} height={190} color="#8FE0EF" />
             </View>
             <View style={styles.heroText}>
-              <Text style={styles.heroGreeting}>{greeting()},</Text>
+              <Text style={styles.heroGreeting}>{greeting(loc)},</Text>
               <Text style={styles.heroName} numberOfLines={1}>
                 {firstName}
               </Text>
               <View style={styles.statRow}>
                 <View style={styles.stat}>
                   <Text style={styles.statNum}>{openCount}</Text>
-                  <Text style={styles.statLabel}>{openCount === 1 ? 'proiect activ' : 'proiecte active'}</Text>
+                  <Text style={styles.statLabel}>{t.activeProjects(openCount)}</Text>
                 </View>
                 <View style={styles.stat}>
                   <Text style={styles.statNum}>{inProgress}</Text>
-                  <Text style={styles.statLabel}>{inProgress === 1 ? 'sesizare în lucru' : 'sesizări în lucru'}</Text>
+                  <Text style={styles.statLabel}>{t.complaintsInProgress(inProgress)}</Text>
                 </View>
               </View>
             </View>
@@ -93,27 +97,27 @@ export default function HomeScreen() {
         {/* Learn the rule here rather than by bouncing off a locked action later. */}
         {!canParticipate ? (
           <Animated.View entering={FadeInDown.duration(400).delay(90)} style={styles.gate}>
-            <VerifyGate action="participa" />
+            <VerifyGate action="participate" />
           </Animated.View>
         ) : null}
 
         <Animated.View entering={FadeInDown.duration(400).delay(120)} style={styles.qaRow}>
-          <QuickAction icon="megaphone-outline" label={'Raportează\no problemă'} bg={c.accentWash} fg={c.accentPressed} onPress={() => router.push('/complaint/new')} />
-          <QuickAction icon="documents-outline" label={'Proiecte\nși consultări'} bg={c.brandWash} fg={c.brand} onPress={() => router.push('/proiecte')} />
+          <QuickAction icon="megaphone-outline" label={t.qaReport} bg={c.accentWash} fg={c.accentPressed} onPress={() => router.push('/complaint/new')} />
+          <QuickAction icon="documents-outline" label={t.qaProjects} bg={c.brandWash} fg={c.brand} onPress={() => router.push('/proiecte')} />
         </Animated.View>
         <Animated.View entering={FadeInDown.duration(400).delay(180)} style={styles.qaRow}>
-          <QuickAction icon="alert-circle-outline" label={'Sesizările\nmele'} bg={c.amberWash} fg={c.amber} onPress={() => router.push('/contact')} />
-          <QuickAction icon="sparkles-outline" label={'Întreabă\nprimăria'} bg={c.greenWash} fg={c.green} onPress={() => router.push('/ask')} />
+          <QuickAction icon="alert-circle-outline" label={t.qaMyComplaints} bg={c.amberWash} fg={c.amber} onPress={() => router.push('/contact')} />
+          <QuickAction icon="sparkles-outline" label={t.qaAsk} bg={c.greenWash} fg={c.green} onPress={() => router.push('/ask')} />
         </Animated.View>
 
         <Animated.View entering={FadeInDown.duration(400).delay(240)} style={{ marginTop: Spacing.two }}>
           <SectionLabel
             action={
               <Pressable onPress={() => router.push('/proiecte')}>
-                <Text style={[styles.seeAll, { color: c.brand }]}>Toate</Text>
+                <Text style={[styles.seeAll, { color: c.brand }]}>{t.seeAll}</Text>
               </Pressable>
             }>
-            Proiecte recente
+            {t.recentProjects}
           </SectionLabel>
         </Animated.View>
 
@@ -121,7 +125,7 @@ export default function HomeScreen() {
           {postsLoading ? (
             <LoadingView />
           ) : recent.length === 0 ? (
-            <EmptyState icon="file-tray-outline" title="Niciun proiect deocamdată" />
+            <EmptyState icon="file-tray-outline" title={t.noProjects} />
           ) : (
             recent.map((post, i) => (
               <Animated.View key={post.id} entering={FadeInDown.duration(400).delay(300 + i * 80)}>

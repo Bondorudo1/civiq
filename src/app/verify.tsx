@@ -12,15 +12,15 @@ import { WaterTexture } from '@/components/water-texture';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useVerification } from '@/hooks/use-verification';
+import { useT } from '@/i18n';
+import { assistantText } from '@/i18n/assistant';
 
-const REASONS = [
-  { icon: 'person-outline', text: 'Un locuitor, o singură voce — nimeni nu votează de zece ori.' },
-  { icon: 'location-outline', text: 'Sesizările ajung la echipa potrivită, pe adresa potrivită.' },
-  { icon: 'lock-closed-outline', text: 'Datele merg doar la primărie și nu apar public.' },
-] as const;
+/** Same order as `assistantText.reasons`, which carries the copy. */
+const REASON_ICONS = ['person-outline', 'location-outline', 'lock-closed-outline'] as const;
 
 export default function VerifyScreen() {
   const c = useTheme();
+  const t = useT(assistantText);
   const request = useRequestVerification();
   const { isPending, isRejected } = useVerification();
 
@@ -39,7 +39,7 @@ export default function VerifyScreen() {
         onSuccess: () => setSent(true),
         onError: (e: unknown) => {
           const fields = (e as { fields?: Record<string, string> })?.fields;
-          setError(fields?.idnp ?? 'Nu am putut trimite cererea. Încearcă din nou.');
+          setError(fields?.idnp ?? t.submitFailed);
         },
       },
     );
@@ -47,10 +47,10 @@ export default function VerifyScreen() {
   const bar = (
     <SafeAreaView edges={['top']} style={{ backgroundColor: c.brand }}>
       <View style={styles.bar}>
-        <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Înapoi">
+        <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel={t.back}>
           <Ionicons name="arrow-back" size={24} color={c.onBrand} />
         </Pressable>
-        <Text style={[styles.barTitle, { color: c.onBrand }]}>Verificare</Text>
+        <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.verifyTitle}</Text>
       </View>
     </SafeAreaView>
   );
@@ -69,15 +69,11 @@ export default function VerifyScreen() {
               <Ionicons name="hourglass-outline" size={38} color="#FFFFFF" />
             </Animated.View>
           </View>
-          <Text style={[styles.doneTitle, { color: c.text }]}>Cererea a fost trimisă</Text>
-          <Text style={[styles.doneText, { color: c.textSecondary }]}>
-            Primăria confirmă datele și îți deschide accesul. Vei primi o notificare cu decizia.
-          </Text>
-          <Text style={[styles.doneNote, { color: c.muted }]}>
-            Până atunci poți citi proiectele și anunțurile, dar nu poți comenta sau depune sesizări.
-          </Text>
+          <Text style={[styles.doneTitle, { color: c.text }]}>{t.sentTitle}</Text>
+          <Text style={[styles.doneText, { color: c.textSecondary }]}>{t.sentText}</Text>
+          <Text style={[styles.doneNote, { color: c.muted }]}>{t.sentNote}</Text>
           <View style={styles.doneBtns}>
-            <Button title="Înapoi acasă" onPress={() => router.replace('/')} />
+            <Button title={t.backHome} onPress={() => router.replace('/')} />
           </View>
         </View>
       </View>
@@ -96,48 +92,43 @@ export default function VerifyScreen() {
             <WaterTexture width={200} height={140} color={c.brandBright} />
           </View>
           <Ionicons name="shield-checkmark-outline" size={30} color={c.brand} />
-          <Text style={[styles.title, { color: c.text }]}>Confirmă că locuiești în Cahul</Text>
-          <Text style={[styles.subtitle, { color: c.textSecondary }]}>
-            Oricine poate citi ce se întâmplă în oraș. Ca să comentezi, să reacționezi sau să depui
-            o sesizare, primăria trebuie să știe că ești locuitor.
-          </Text>
+          <Text style={[styles.title, { color: c.text }]}>{t.heroTitle}</Text>
+          <Text style={[styles.subtitle, { color: c.textSecondary }]}>{t.heroText}</Text>
         </View>
 
         {isRejected ? (
           <View style={[styles.rejected, { backgroundColor: c.accentWash, borderColor: c.accent }]}>
             <Ionicons name="alert-circle-outline" size={16} color={c.accentPressed} />
-            <Text style={[styles.rejectedText, { color: c.accentPressed }]}>
-              Cererea anterioară a fost respinsă. Verifică datele și trimite din nou.
-            </Text>
+            <Text style={[styles.rejectedText, { color: c.accentPressed }]}>{t.rejected}</Text>
           </View>
         ) : null}
 
         <View style={styles.reasons}>
-          {REASONS.map((r) => (
-            <View key={r.text} style={styles.reason}>
-              <Ionicons name={r.icon} size={16} color={c.brand} />
-              <Text style={[styles.reasonText, { color: c.textSecondary }]}>{r.text}</Text>
+          {REASON_ICONS.map((icon, i) => (
+            <View key={icon} style={styles.reason}>
+              <Ionicons name={icon} size={16} color={c.brand} />
+              <Text style={[styles.reasonText, { color: c.textSecondary }]}>{t.reasons[i]}</Text>
             </View>
           ))}
         </View>
 
         <Field
-          label="IDNP"
+          label={t.idnpLabel}
           icon="card-outline"
-          placeholder="13 cifre"
+          placeholder={t.idnpPlaceholder}
           value={idnp}
-          onChangeText={(t) => setIdnp(t.replace(/\D/g, ''))}
+          onChangeText={(v) => setIdnp(v.replace(/\D/g, ''))}
           keyboardType="number-pad"
           maxLength={13}
         />
         {idnp.length > 0 && !idnpOk ? (
-          <Text style={[styles.hint, { color: c.accentPressed }]}>IDNP-ul are exact 13 cifre.</Text>
+          <Text style={[styles.hint, { color: c.accentPressed }]}>{t.idnpHint}</Text>
         ) : null}
 
         <Field
-          label="Adresa de domiciliu"
+          label={t.addressLabel}
           icon="home-outline"
-          placeholder="str. Independenței 24, ap. 3"
+          placeholder={t.addressPlaceholder}
           value={address}
           onChangeText={setAddress}
           maxLength={255}
@@ -146,14 +137,12 @@ export default function VerifyScreen() {
         {error ? <Text style={[styles.hint, { color: c.accentPressed }]}>{error}</Text> : null}
 
         <Button
-          title={request.isPending ? 'Se trimite…' : 'Trimite cererea'}
+          title={request.isPending ? t.submitting : t.submit}
           icon="shield-checkmark-outline"
           onPress={submit}
           disabled={!canSubmit}
         />
-        <Text style={[styles.legal, { color: c.muted }]}>
-          Datele sunt folosite doar pentru confirmarea domiciliului și nu sunt afișate public.
-        </Text>
+        <Text style={[styles.legal, { color: c.muted }]}>{t.legal}</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );

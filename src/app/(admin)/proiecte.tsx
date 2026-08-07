@@ -10,10 +10,14 @@ import { EmptyState, ErrorView, LoadingView } from '@/components/ui/state-views'
 import { POST_TYPE } from '@/constants/civic';
 import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useLocale, useT } from '@/i18n';
+import { adminTabsText } from '@/i18n/adminTabs';
 import { shortDate } from '@/lib/date';
 
 export default function AdminPostsScreen() {
   const c = useTheme();
+  const t = useT(adminTabsText);
+  const loc = useLocale();
   const router = useRouter();
   const { data, isLoading, isError, refetch } = usePosts();
   const posts = data ?? [];
@@ -21,7 +25,7 @@ export default function AdminPostsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
-      <AdminHeader title="Proiecte" subtitle={`${open} deschise · ${posts.length} în total`} />
+      <AdminHeader title={t.postsTitle} subtitle={t.postsSubtitle(open, posts.length)} />
 
       <FlatList
         data={posts}
@@ -36,32 +40,32 @@ export default function AdminPostsScreen() {
               borderColor={closed ? c.green : undefined}
               onPress={() => router.push({ pathname: '/admin/post/[id]', params: { id: item.id } })}>
               <View style={styles.top}>
-                <Tag label={meta.label} bg={meta.bg} fg={meta.fg} icon={meta.icon} />
+                <Tag label={meta.label[loc]} bg={meta.bg} fg={meta.fg} icon={meta.icon} />
                 <Text style={[styles.state, { color: closed ? c.green : c.brand }]}>
-                  {closed ? 'ÎNCHIS' : 'DESCHIS'}
+                  {closed ? t.postClosed : t.postOpen}
                 </Text>
               </View>
               <Text style={[styles.title, { color: c.text }]} numberOfLines={2}>
                 {item.title}
               </Text>
               <Text style={[styles.meta, { color: c.textSecondary }]}>
-                <Text style={styles.mono}>{shortDate(item.createdAt)}</Text> · {item.likesCount} susțin ·{' '}
-                {item.commentsCount} comentarii
+                <Text style={styles.mono}>{shortDate(item.createdAt, loc)}</Text> ·{' '}
+                {t.postMeta(item.likesCount, item.commentsCount)}
               </Text>
             </Plaque>
           );
         }}
         ListEmptyComponent={
           isLoading ? (
-            <LoadingView label="Se încarcă proiectele…" />
+            <LoadingView label={t.postsLoading} />
           ) : isError ? (
             <ErrorView onRetry={() => refetch()} />
           ) : (
             <EmptyState
               icon="document-text-outline"
-              title="Niciun proiect"
-              message="Nu ai publicat consultări încă."
-              actionLabel="Proiect nou"
+              title={t.postsEmptyTitle}
+              message={t.postsEmptyMessage}
+              actionLabel={t.newPost}
               onAction={() => router.push('/admin/post/new')}
             />
           )
@@ -72,7 +76,7 @@ export default function AdminPostsScreen() {
         onPress={() => router.push('/admin/post/new')}
         style={({ pressed }) => [styles.fab, { backgroundColor: pressed ? c.brand : c.brandDeep }]}
         accessibilityRole="button"
-        accessibilityLabel="Proiect nou">
+        accessibilityLabel={t.newPost}>
         <Ionicons name="add" size={28} color={c.onBrand} />
       </Pressable>
     </View>

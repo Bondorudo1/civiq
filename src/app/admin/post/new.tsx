@@ -13,6 +13,8 @@ import { Field } from '@/components/ui/field';
 import { POST_TYPE } from '@/constants/civic';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useLocale, useT } from '@/i18n';
+import { adminDetailText } from '@/i18n/adminDetail';
 
 const TYPES = Object.keys(POST_TYPE) as PostType[];
 
@@ -23,6 +25,8 @@ const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export default function AdminNewPostScreen() {
   const c = useTheme();
+  const t = useT(adminDetailText);
+  const loc = useLocale();
   const create = useAdminCreatePost();
 
   const [type, setType] = useState<PostType | null>(null);
@@ -39,11 +43,11 @@ export default function AdminNewPostScreen() {
     if (res.canceled) return;
     const asset = res.assets[0];
     if (asset.mimeType && !IMAGE_TYPES.includes(asset.mimeType)) {
-      setError('Sunt acceptate doar imagini JPEG, PNG sau WebP.');
+      setError(t.imageTypeError);
       return;
     }
     if (asset.fileSize && asset.fileSize > IMAGE_MAX_BYTES) {
-      setError('Imaginea depășește 10 MB.');
+      setError(t.imageSizeError);
       return;
     }
     setError(null);
@@ -57,7 +61,7 @@ export default function AdminNewPostScreen() {
       { title: title.trim(), body: body.trim(), type, lang, imageUrl: image },
       {
         onSuccess: () => router.back(),
-        onError: () => setError('Nu am putut publica proiectul. Încearcă din nou.'),
+        onError: () => setError(t.publishPostFailed),
       },
     );
   };
@@ -68,36 +72,34 @@ export default function AdminNewPostScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView edges={['top']} style={{ backgroundColor: c.brandDeep }}>
         <View style={styles.bar}>
-          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Înapoi">
+          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel={t.back}>
             <Ionicons name="arrow-back" size={24} color={c.onBrand} />
           </Pressable>
-          <Text style={[styles.barTitle, { color: c.onBrand }]}>Proiect nou</Text>
+          <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.newPostBar}</Text>
         </View>
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={[styles.notice, { backgroundColor: c.brandWash, borderColor: c.brand }]}>
           <Ionicons name="people-outline" size={16} color={c.brand} />
-          <Text style={[styles.noticeText, { color: c.brand }]}>
-            Proiectul devine public imediat, deschis pentru comentarii și reacții.
-          </Text>
+          <Text style={[styles.noticeText, { color: c.brand }]}>{t.publicNotice}</Text>
         </View>
 
-        <Text style={[styles.label, { color: c.textSecondary }]}>Tip</Text>
+        <Text style={[styles.label, { color: c.textSecondary }]}>{t.fieldType}</Text>
         <View style={styles.chips}>
-          {TYPES.map((t) => {
-            const meta = POST_TYPE[t];
-            const active = type === t;
+          {TYPES.map((pt) => {
+            const meta = POST_TYPE[pt];
+            const active = type === pt;
             return (
               <Pressable
-                key={t}
-                onPress={() => setType(t)}
+                key={pt}
+                onPress={() => setType(pt)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
                 style={[styles.chip, { borderColor: active ? c.brand : c.line, backgroundColor: active ? c.brandWash : c.surface }]}>
                 <Ionicons name={meta.icon} size={15} color={active ? c.brand : c.textSecondary} />
                 <Text style={{ fontFamily: Fonts.semibold, fontSize: 12.5, color: active ? c.brand : c.text }}>
-                  {meta.label}
+                  {meta.label[loc]}
                 </Text>
               </Pressable>
             );
@@ -105,20 +107,20 @@ export default function AdminNewPostScreen() {
         </View>
 
         <Field
-          label="Titlu"
+          label={t.fieldTitle}
           icon="pricetag-outline"
-          placeholder="Titlul consultării"
+          placeholder={t.titlePlaceholder}
           value={title}
           onChangeText={setTitle}
           maxLength={LIMITS.title}
         />
 
         <View style={styles.group}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Conținut</Text>
+          <Text style={[styles.label, { color: c.textSecondary }]}>{t.fieldBody}</Text>
           <TextInput
             value={body}
             onChangeText={setBody}
-            placeholder="Descrie propunerea și ce anume vrei să afli de la locuitori…"
+            placeholder={t.bodyPlaceholder}
             placeholderTextColor={c.textSecondary}
             underlineColorAndroid="transparent"
             maxLength={LIMITS.body}
@@ -132,7 +134,7 @@ export default function AdminNewPostScreen() {
         </View>
 
         <View style={styles.group}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Limba originalului</Text>
+          <Text style={[styles.label, { color: c.textSecondary }]}>{t.originalLanguage}</Text>
           <View style={styles.chips}>
             {(['ro', 'ru'] as Locale[]).map((l) => {
               const active = lang === l;
@@ -144,7 +146,7 @@ export default function AdminNewPostScreen() {
                   accessibilityState={{ selected: active }}
                   style={[styles.chip, { borderColor: active ? c.brand : c.line, backgroundColor: active ? c.brandWash : c.surface }]}>
                   <Text style={{ fontFamily: Fonts.semibold, fontSize: 12.5, color: active ? c.brand : c.text }}>
-                    {l === 'ro' ? 'Română' : 'Русский'}
+                    {l === 'ro' ? t.langRo : t.langRu}
                   </Text>
                 </Pressable>
               );
@@ -153,7 +155,7 @@ export default function AdminNewPostScreen() {
         </View>
 
         <View style={styles.group}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Imagine (opțional)</Text>
+          <Text style={[styles.label, { color: c.textSecondary }]}>{t.imageOptional}</Text>
           {image ? (
             <View style={styles.photoWrap}>
               <Image source={{ uri: image }} style={styles.photo} contentFit="cover" />
@@ -164,20 +166,18 @@ export default function AdminNewPostScreen() {
           ) : (
             <Pressable onPress={pickImage} style={[styles.upload, { borderColor: c.line }]}>
               <Ionicons name="image-outline" size={22} color={c.brand} />
-              <Text style={[styles.uploadText, { color: c.textSecondary }]}>Adaugă o imagine</Text>
+              <Text style={[styles.uploadText, { color: c.textSecondary }]}>{t.addImage}</Text>
             </Pressable>
           )}
         </View>
 
         {error ? <Text style={[styles.hint, { color: c.accentPressed }]}>{error}</Text> : null}
         {!canSubmit ? (
-          <Text style={[styles.hint, { color: c.textSecondary }]}>
-            Alege tipul și completează titlul (min. 3 caractere) și conținutul.
-          </Text>
+          <Text style={[styles.hint, { color: c.textSecondary }]}>{t.incompleteHint}</Text>
         ) : null}
 
         <Button
-          title={create.isPending ? 'Se publică…' : 'Publică proiectul'}
+          title={create.isPending ? t.publishing : t.publishPost}
           icon="megaphone-outline"
           onPress={submit}
           disabled={!canSubmit || create.isPending}

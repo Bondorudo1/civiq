@@ -12,21 +12,19 @@ import { EmptyState, ErrorView, LoadingView } from '@/components/ui/state-views'
 import { COMPLAINT_CATEGORY, COMPLAINT_STATUS } from '@/constants/civic';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useLocale, useT } from '@/i18n';
+import { adminTabsText } from '@/i18n/adminTabs';
 import { responseWindow, shortDate } from '@/lib/date';
 import { shortRef } from '@/lib/id';
 
 type Filter = 'ALL' | ComplaintStatus;
 
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: 'ALL', label: 'Toate' },
-  { key: 'NEW', label: COMPLAINT_STATUS.NEW.label },
-  { key: 'IN_PROGRESS', label: COMPLAINT_STATUS.IN_PROGRESS.label },
-  { key: 'RESOLVED', label: COMPLAINT_STATUS.RESOLVED.label },
-  { key: 'REJECTED', label: COMPLAINT_STATUS.REJECTED.label },
-];
+const FILTERS: Filter[] = ['ALL', 'NEW', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'];
 
 export default function AdminQueueScreen() {
   const c = useTheme();
+  const t = useT(adminTabsText);
+  const loc = useLocale();
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>('ALL');
   const { data, isLoading, isError, refetch } = useAdminComplaints(
@@ -45,37 +43,37 @@ export default function AdminQueueScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
-      <AdminHeader title="Sesizări" subtitle="Coada de lucru a primăriei" />
+      <AdminHeader title={t.queueTitle} subtitle={t.queueSubtitle} />
 
       <View style={[styles.stats, { backgroundColor: c.brandDeep }]}>
         <View style={styles.statRow}>
           <View style={styles.stat}>
             <Text style={styles.statNum}>{untouched}</Text>
-            <Text style={styles.statLabel}>noi</Text>
+            <Text style={styles.statLabel}>{t.statNew}</Text>
           </View>
           <View style={[styles.stat, styles.statMid]}>
             <Text style={styles.statNum}>{working}</Text>
-            <Text style={styles.statLabel}>în lucru</Text>
+            <Text style={styles.statLabel}>{t.statInWork}</Text>
           </View>
           <View style={styles.stat}>
             <Text style={[styles.statNum, overdue > 0 && styles.statAlarm]}>{overdue}</Text>
-            <Text style={styles.statLabel}>termen depășit</Text>
+            <Text style={styles.statLabel}>{t.statOverdue}</Text>
           </View>
         </View>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsWrap} contentContainerStyle={styles.tabs}>
         {FILTERS.map((f) => {
-          const active = filter === f.key;
+          const active = filter === f;
           return (
             <Pressable
-              key={f.key}
-              onPress={() => setFilter(f.key)}
+              key={f}
+              onPress={() => setFilter(f)}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
               style={[styles.tab, { borderColor: active ? c.brand : c.line, backgroundColor: active ? c.brand : c.surface }]}>
               <Text style={{ fontFamily: Fonts.semibold, fontSize: 12.5, color: active ? c.onBrand : c.textSecondary }}>
-                {f.label}
+                {f === 'ALL' ? t.filterAll : COMPLAINT_STATUS[f].label[loc]}
               </Text>
             </Pressable>
           );
@@ -104,12 +102,12 @@ export default function AdminQueueScreen() {
                   {item.title}
                 </Text>
                 <Text style={[styles.meta, { color: c.textSecondary }]} numberOfLines={1}>
-                  {COMPLAINT_CATEGORY[item.category].label} · {item.author.fullName} ·{' '}
-                  <Text style={styles.mono}>{shortDate(item.createdAt)}</Text>
+                  {COMPLAINT_CATEGORY[item.category].label[loc]} · {item.author.fullName} ·{' '}
+                  <Text style={styles.mono}>{shortDate(item.createdAt, loc)}</Text>
                 </Text>
                 {w ? (
                   <Text style={[styles.window, { color: late ? c.accentPressed : c.amber }]}>
-                    {late ? `Termen depășit cu ${Math.abs(w.remaining)} zile` : `${w.remaining} zile rămase`}
+                    {late ? t.overdueBy(Math.abs(w.remaining)) : t.daysLeft(w.remaining)}
                   </Text>
                 ) : null}
               </Plaque>
@@ -118,14 +116,14 @@ export default function AdminQueueScreen() {
         }}
         ListEmptyComponent={
           isLoading ? (
-            <LoadingView label="Se încarcă coada…" />
+            <LoadingView label={t.queueLoading} />
           ) : isError ? (
             <ErrorView onRetry={() => refetch()} />
           ) : (
             <EmptyState
               icon="checkmark-done-outline"
-              title="Nimic în coadă"
-              message={filter === 'ALL' ? 'Nicio sesizare de la cetățeni.' : 'Nimic cu acest status.'}
+              title={t.queueEmptyTitle}
+              message={filter === 'ALL' ? t.queueEmptyAll : t.queueEmptyFiltered}
             />
           )
         }

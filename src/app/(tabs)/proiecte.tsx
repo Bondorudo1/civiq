@@ -12,11 +12,15 @@ import { EmptyState, ErrorView, LoadingView } from '@/components/ui/state-views'
 import { POST_TYPE } from '@/constants/civic';
 import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useLocale, useT } from '@/i18n';
+import { projectsText } from '@/i18n/projects';
 
 type Filter = 'ALL' | PostType;
 
 export default function ProiecteScreen() {
   const c = useTheme();
+  const t = useT(projectsText);
+  const loc = useLocale();
   const router = useRouter();
   const { data: posts, isLoading, isError, refetch } = usePosts();
   const [query, setQuery] = useState('');
@@ -35,16 +39,16 @@ export default function ProiecteScreen() {
   });
 
   const chips: { key: Filter; label: string }[] = [
-    { key: 'ALL', label: 'Toate' },
-    ...types.map((t) => ({ key: t as Filter, label: POST_TYPE[t].label })),
+    { key: 'ALL', label: t.all },
+    ...types.map((ty) => ({ key: ty as Filter, label: POST_TYPE[ty].label[loc] })),
   ];
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
-      <AppHeader title="Proiecte" onBell={() => router.push('/notifications')} />
+      <AppHeader title={t.title} onBell={() => router.push('/notifications')} />
 
       <View style={styles.controls}>
-        <Field icon="search-outline" placeholder="Caută proiecte…" value={query} onChangeText={setQuery} />
+        <Field icon="search-outline" placeholder={t.searchPlaceholder} value={query} onChangeText={setQuery} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           {chips.map((ch) => {
             const active = filter === ch.key;
@@ -77,14 +81,14 @@ export default function ProiecteScreen() {
         )}
         ListEmptyComponent={
           isLoading ? (
-            <LoadingView label="Se încarcă proiectele…" />
+            <LoadingView label={t.loading} />
           ) : isError ? (
             <ErrorView onRetry={() => refetch()} />
           ) : (
             <EmptyState
               icon="file-tray-outline"
-              title="Niciun proiect"
-              message={query || filter !== 'ALL' ? 'Nimic pentru filtrul ales.' : 'Nu există proiecte deocamdată.'}
+              title={t.emptyTitle}
+              message={query || filter !== 'ALL' ? t.emptyFiltered : t.emptyNone}
             />
           )
         }

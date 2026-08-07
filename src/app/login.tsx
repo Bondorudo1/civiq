@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLogin } from '@/api/hooks';
 import Logo from '@/assets/images/logo.svg';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { authText } from '@/i18n/auth';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/store/auth';
 
@@ -23,23 +24,21 @@ export default function LoginScreen() {
   const [emailFocus, setEmailFocus] = useState(false);
   const [pwFocus, setPwFocus] = useState(false);
   const [locale, setLocale] = useState<'ro' | 'ru'>('ro');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<'credentials' | 'network' | null>(null);
   const login = useLogin();
+  const t = authText[locale];
   const canSubmit = email.trim().length > 3 && password.length > 0 && !login.isPending;
 
   // 401 deliberately says the same thing for a wrong password and an unknown
   // address — the API won't reveal which, and neither should we.
+  // The cause is held, not the sentence, so the toggle re-translates a shown error.
   const submit = () =>
     login.mutate(
       { email: email.trim().toLowerCase(), password },
       {
         onSuccess: (res) => signIn(res.accessToken, res.user.role),
         onError: (e: unknown) =>
-          setError(
-            (e as { code?: string })?.code === 'UNAUTHORIZED'
-              ? 'Email sau parolă incorectă.'
-              : 'Nu ne-am putut conecta. Verifică rețeaua și încearcă din nou.',
-          ),
+          setError((e as { code?: string })?.code === 'UNAUTHORIZED' ? 'credentials' : 'network'),
       },
     );
 
@@ -80,19 +79,19 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.welcomeWrap} pointerEvents="none">
-            <Text style={styles.welcomeGhost}>Bine ai venit</Text>
+            <Text style={styles.welcomeGhost}>{t.welcome}</Text>
             <View style={styles.underline} />
-            <Text style={styles.welcomeSub}>Vocea ta pentru Cahul</Text>
+            <Text style={styles.welcomeSub}>{t.welcomeSub}</Text>
           </View>
         </SafeAreaView>
       </View>
 
       <View style={[styles.card, { backgroundColor: c.background }]}>
-        <Text style={[styles.title, { color: c.text }]}>Autentificare</Text>
-        <Text style={[styles.subtitle, { color: c.textSecondary }]}>Intră dacă ai deja un cont</Text>
+        <Text style={[styles.title, { color: c.text }]}>{t.title}</Text>
+        <Text style={[styles.subtitle, { color: c.textSecondary }]}>{t.subtitle}</Text>
 
         <View style={styles.field}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Email</Text>
+          <Text style={[styles.label, { color: c.textSecondary }]}>{t.emailLabel}</Text>
           <View style={[styles.inputWrap, { backgroundColor: c.brandWash, borderColor: emailFocus ? c.brand : 'transparent' }]}>
             <Ionicons name="mail-outline" size={18} color={emailFocus ? c.brand : c.textSecondary} />
             <TextInput
@@ -100,7 +99,7 @@ export default function LoginScreen() {
               onChangeText={setEmail}
               onFocus={() => setEmailFocus(true)}
               onBlur={() => setEmailFocus(false)}
-              placeholder="nume@exemplu.md"
+              placeholder={t.emailPlaceholder}
               placeholderTextColor={c.textSecondary}
               autoCapitalize="none"
               keyboardType="email-address"
@@ -110,7 +109,7 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Parolă</Text>
+          <Text style={[styles.label, { color: c.textSecondary }]}>{t.passwordLabel}</Text>
           <View style={[styles.inputWrap, { backgroundColor: c.brandWash, borderColor: pwFocus ? c.brand : 'transparent' }]}>
             <Ionicons name="lock-closed-outline" size={18} color={pwFocus ? c.brand : c.textSecondary} />
             <TextInput
@@ -132,7 +131,9 @@ export default function LoginScreen() {
         {error ? (
           <View style={[styles.error, { backgroundColor: c.accentWash, borderColor: c.accent }]}>
             <Ionicons name="alert-circle-outline" size={16} color={c.accentPressed} />
-            <Text style={[styles.errorText, { color: c.accentPressed }]}>{error}</Text>
+            <Text style={[styles.errorText, { color: c.accentPressed }]}>
+              {error === 'credentials' ? t.errCredentials : t.errNetwork}
+            </Text>
           </View>
         ) : null}
 
@@ -145,15 +146,15 @@ export default function LoginScreen() {
             { backgroundColor: pressed ? c.brandDeep : c.brand, opacity: canSubmit ? 1 : 0.5 },
           ]}>
           <Text style={[styles.buttonText, { color: c.onBrand }]}>
-            {login.isPending ? 'Se conectează…' : 'Intră în cont'}
+            {login.isPending ? t.submitting : t.submit}
           </Text>
           <Ionicons name="arrow-forward" size={18} color={c.onBrand} />
         </Pressable>
 
         <View style={styles.footer}>
-          <Text style={{ color: c.textSecondary, fontFamily: Fonts.regular }}>Nu ai cont?</Text>
+          <Text style={{ color: c.textSecondary, fontFamily: Fonts.regular }}>{t.noAccount}</Text>
           <Link href="/register" style={{ color: c.brand, fontFamily: Fonts.semibold }}>
-            Înregistrează-te
+            {t.signUp}
           </Link>
         </View>
       </View>

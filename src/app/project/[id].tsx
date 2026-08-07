@@ -25,6 +25,8 @@ import { POST_TYPE } from '@/constants/civic';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useVerification } from '@/hooks/use-verification';
+import { useLocale, useT } from '@/i18n';
+import { projectText } from '@/i18n/project';
 import { deadlineLabel } from '@/lib/date';
 
 function initials(name: string): string {
@@ -54,10 +56,12 @@ function CommentRow({
 }) {
   const c = useTheme();
   const router = useRouter();
+  const t = useT(projectText);
+  const loc = useLocale();
   const reactTo = useReactToComment(comment.postId);
   const remove = useDeleteComment(comment.postId);
 
-  const date = new Date(comment.createdAt).toLocaleDateString('ro-MD');
+  const date = new Date(comment.createdAt).toLocaleDateString(loc === 'ru' ? 'ru-MD' : 'ro-MD');
   const state = reactTo.data ?? {
     myReaction: comment.myReaction ?? null,
     likesCount: comment.likesCount,
@@ -78,14 +82,14 @@ function CommentRow({
         hitSlop={8}
         accessibilityRole="button"
         accessibilityState={{ selected: liked }}
-        accessibilityLabel={`Apreciez, ${likes}`}
+        accessibilityLabel={t.like(likes)}
         style={styles.commentActionBtn}>
         <Ionicons name={liked ? 'heart' : 'heart-outline'} size={13} color={c.accentPressed} />
         <Text style={[styles.commentAction, { color: c.accentPressed }]}>{likes}</Text>
       </Pressable>
       {!reply && onReply ? (
         <Pressable onPress={() => onReply(comment)} hitSlop={8} accessibilityRole="button">
-          <Text style={[styles.commentAction, { color: c.textSecondary }]}>Răspunde</Text>
+          <Text style={[styles.commentAction, { color: c.textSecondary }]}>{t.reply}</Text>
         </Pressable>
       ) : null}
       {/* can_delete: own comment, or ADMIN. */}
@@ -95,8 +99,8 @@ function CommentRow({
           hitSlop={8}
           disabled={remove.isPending}
           accessibilityRole="button"
-          accessibilityLabel="Șterge comentariul">
-          <Text style={[styles.commentAction, { color: c.muted }]}>Șterge</Text>
+          accessibilityLabel={t.removeComment}>
+          <Text style={[styles.commentAction, { color: c.muted }]}>{t.remove}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -125,7 +129,7 @@ function CommentRow({
               <Text style={[styles.officialDate, { color: c.brand }]}>{date}</Text>
             </View>
             <View style={[styles.officialChip, { backgroundColor: c.brand }]}>
-              <Text style={styles.officialChipText}>RĂSPUNS OFICIAL</Text>
+              <Text style={styles.officialChipText}>{t.officialChip}</Text>
             </View>
           </View>
           <Text style={[styles.officialText, { color: c.text }]}>{comment.text}</Text>
@@ -154,6 +158,8 @@ function CommentRow({
 
 export default function ProjectDetailScreen() {
   const c = useTheme();
+  const t = useT(projectText);
+  const loc = useLocale();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: post, isLoading } = usePost(id);
   const { data: comments } = useComments(id);
@@ -204,7 +210,7 @@ export default function ProjectDetailScreen() {
 
   const cat = post ? POST_TYPE[post.type] : null;
   const closed = post?.status === 'CLOSED';
-  const dl = deadlineLabel(post?.deadline);
+  const dl = deadlineLabel(post?.deadline, loc);
   // The react endpoint answers with the authoritative counts, so prefer them.
   const r = postReaction.data ?? {
     myReaction: post?.myReaction ?? null,
@@ -226,16 +232,16 @@ export default function ProjectDetailScreen() {
       <View style={{ flex: 1, backgroundColor: c.background }}>
         <SafeAreaView edges={['top']} style={{ backgroundColor: c.brand }}>
           <View style={styles.bar}>
-            <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Înapoi">
+            <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel={t.back}>
               <Ionicons name="arrow-back" size={24} color={c.onBrand} />
             </Pressable>
-            <Text style={[styles.barTitle, { color: c.onBrand }]}>Proiect</Text>
+            <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.title}</Text>
           </View>
         </SafeAreaView>
         {isLoading ? (
-          <LoadingView label="Se încarcă…" />
+          <LoadingView label={t.loading} />
         ) : (
-          <EmptyState icon="alert-circle-outline" title="Proiect negăsit" message="Acest proiect nu există sau a fost eliminat." />
+          <EmptyState icon="alert-circle-outline" title={t.notFoundTitle} message={t.notFoundMessage} />
         )}
       </View>
     );
@@ -247,15 +253,15 @@ export default function ProjectDetailScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView edges={['top']} style={{ backgroundColor: c.brand }}>
         <View style={styles.bar}>
-          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Înapoi">
+          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel={t.back}>
             <Ionicons name="arrow-back" size={24} color={c.onBrand} />
           </Pressable>
-          <Text style={[styles.barTitle, { color: c.onBrand }]}>Proiect</Text>
+          <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.title}</Text>
           <Pressable
-            onPress={() => Share.share({ message: `${post.title}\n\nConsultare publică — CiviQ Cahul` })}
+            onPress={() => Share.share({ message: t.shareMessage(post.title) })}
             hitSlop={12}
             accessibilityRole="button"
-            accessibilityLabel="Distribuie proiectul">
+            accessibilityLabel={t.share}>
             <Ionicons name="share-social-outline" size={22} color={c.onBrand} />
           </Pressable>
         </View>
@@ -272,7 +278,7 @@ export default function ProjectDetailScreen() {
 
         <View style={styles.body}>
           <View style={styles.metaRow}>
-            {cat ? <Tag label={cat.label} bg={cat.bg} fg={cat.fg} icon={cat.icon} /> : null}
+            {cat ? <Tag label={cat.label[loc]} bg={cat.bg} fg={cat.fg} icon={cat.icon} /> : null}
             {!closed && dl ? <Text style={[styles.deadline, { color: c.amber }]}>{dl}</Text> : null}
           </View>
 
@@ -302,13 +308,11 @@ export default function ProjectDetailScreen() {
           </View>
           {translated ? (
             <Text style={[styles.machineNote, { color: c.muted }]}>
-              Tradus automat{translated.cached ? ' · din cache' : ''}
+              {t.machineTranslated(translated.cached)}
             </Text>
           ) : null}
           {translate.isError ? (
-            <Text style={[styles.machineNote, { color: c.amber }]}>
-              Traducerea nu e disponibilă acum. Încearcă din nou.
-            </Text>
+            <Text style={[styles.machineNote, { color: c.amber }]}>{t.translateError}</Text>
           ) : null}
 
           <View style={styles.reactions}>
@@ -316,7 +320,7 @@ export default function ProjectDetailScreen() {
               onPress={() => react('LIKE')}
               accessibilityRole="button"
               accessibilityState={{ selected: liked }}
-              accessibilityLabel={`Susțin, ${likeCount}`}
+              accessibilityLabel={t.support(likeCount)}
               style={[styles.reactBtn, { backgroundColor: liked ? c.accentWash : c.surface, borderColor: liked ? c.accent : c.line }]}>
               <Animated.View style={heartStyle}>
                 <Ionicons name={liked ? 'heart' : 'heart-outline'} size={16} color={c.accentPressed} />
@@ -327,7 +331,7 @@ export default function ProjectDetailScreen() {
               onPress={() => react('DISLIKE')}
               accessibilityRole="button"
               accessibilityState={{ selected: disliked }}
-              accessibilityLabel={`Nu susțin, ${dislikeCount}`}
+              accessibilityLabel={t.oppose(dislikeCount)}
               style={[styles.reactBtn, { backgroundColor: disliked ? c.brandWash : c.surface, borderColor: disliked ? c.brand : c.line }]}>
               <Ionicons name={disliked ? 'thumbs-down' : 'thumbs-down-outline'} size={16} color={disliked ? c.brand : c.textSecondary} />
               <Text style={[styles.reactText, { color: disliked ? c.brand : c.textSecondary }]}>{dislikeCount}</Text>
@@ -335,7 +339,7 @@ export default function ProjectDetailScreen() {
             <Pressable
               onPress={() => inputRef.current?.focus()}
               accessibilityRole="button"
-              accessibilityLabel={`Comentează, ${commentCount} comentarii`}
+              accessibilityLabel={t.commentsAction(commentCount)}
               style={[styles.reactBtn, { backgroundColor: c.surface, borderColor: c.line }]}>
               <Ionicons name="chatbubble-outline" size={16} color={c.textSecondary} />
               <Text style={[styles.reactText, { color: c.textSecondary }]}>{commentCount}</Text>
@@ -346,7 +350,7 @@ export default function ProjectDetailScreen() {
             <Plaque borderColor={c.green} style={styles.verdict}>
               <View style={styles.verdictHead}>
                 <Ionicons name="checkmark-circle" size={18} color={c.green} />
-                <Text style={[styles.verdictLabel, { color: c.green }]}>Verdictul primăriei</Text>
+                <Text style={[styles.verdictLabel, { color: c.green }]}>{t.verdict}</Text>
               </View>
               <Text style={[styles.text, { color: c.text }]}>{post.verdict}</Text>
             </Plaque>
@@ -357,10 +361,10 @@ export default function ProjectDetailScreen() {
             <Plaque borderColor={summary.data ? c.brand : c.line} style={styles.summary}>
               <View style={styles.summaryHead}>
                 <Ionicons name="sparkles" size={15} color={c.brand} />
-                <Text style={[styles.summaryLabel, { color: c.brand }]}>SINTEZA DISCUȚIEI</Text>
+                <Text style={[styles.summaryLabel, { color: c.brand }]}>{t.summaryLabel}</Text>
                 {summary.data ? (
                   <Text style={[styles.summaryCount, { color: c.muted }]}>
-                    {summary.data.basedOn} mesaje
+                    {t.summaryBasedOn(summary.data.basedOn)}
                   </Text>
                 ) : null}
               </View>
@@ -368,16 +372,14 @@ export default function ProjectDetailScreen() {
                 <Text style={[styles.text, { color: c.text }]}>{summary.data.summary}</Text>
               ) : (
                 <Text style={[styles.text, { color: c.textSecondary }]}>
-                  Vezi pe scurt ce spun cei {commentCount} participanți, fără să citești tot firul.
+                  {t.summaryTeaser(commentCount)}
                 </Text>
               )}
               {summary.isError ? (
-                <Text style={[styles.machineNote, { color: c.amber }]}>
-                  Sinteza nu e disponibilă acum. Încearcă din nou.
-                </Text>
+                <Text style={[styles.machineNote, { color: c.amber }]}>{t.summaryError}</Text>
               ) : null}
               <Button
-                title={summary.isPending ? 'Se rezumă…' : summary.data ? 'Actualizează sinteza' : 'Rezumă discuția'}
+                title={summary.isPending ? t.summarizing : summary.data ? t.summaryRefresh : t.summarize}
                 variant="secondary"
                 icon="sparkles-outline"
                 onPress={() => summary.mutate()}
@@ -388,7 +390,7 @@ export default function ProjectDetailScreen() {
 
           <View style={styles.commentsHead}>
             <Text style={[styles.commentsTitle, { color: c.textSecondary }]}>
-              COMENTARII · {commentCount}
+              {t.commentsHead(commentCount)}
             </Text>
             <View style={[styles.rule, { backgroundColor: c.line }]} />
           </View>
@@ -407,7 +409,7 @@ export default function ProjectDetailScreen() {
             </View>
           ))}
           {createComment.isPending ? (
-            <Text style={[styles.machineNote, { color: c.muted }]}>Se trimite…</Text>
+            <Text style={[styles.machineNote, { color: c.muted }]}>{t.sending}</Text>
           ) : null}
         </View>
       </ScrollView>
@@ -415,14 +417,12 @@ export default function ProjectDetailScreen() {
       {/* Reading is open to everyone; acting waits on the primărie's approval. */}
       {!closed && !canParticipate ? (
         <View style={[styles.composer, { backgroundColor: c.surface, borderTopColor: c.line }]}>
-          <VerifyGate action="comenta" compact />
+          <VerifyGate action="comment" compact />
         </View>
       ) : closed ? (
         <View style={[styles.composer, styles.closedBar, { backgroundColor: c.surface, borderTopColor: c.line }]}>
           <Ionicons name="lock-closed-outline" size={15} color={c.textSecondary} />
-          <Text style={[styles.closedText, { color: c.textSecondary }]}>
-            Consultarea s-a încheiat. Comentariile sunt închise.
-          </Text>
+          <Text style={[styles.closedText, { color: c.textSecondary }]}>{t.closed}</Text>
         </View>
       ) : (
       <View style={[styles.composer, { backgroundColor: c.surface, borderTopColor: c.line }]}>
@@ -430,9 +430,9 @@ export default function ProjectDetailScreen() {
           <View style={[styles.replyBar, { backgroundColor: c.brandWash }]}>
             <Ionicons name="return-down-forward-outline" size={14} color={c.brand} />
             <Text style={[styles.replyText, { color: c.brand }]} numberOfLines={1}>
-              Răspunzi lui {replyTo.author.fullName}
+              {t.replyingTo(replyTo.author.fullName)}
             </Text>
-            <Pressable onPress={() => setReplyTo(null)} hitSlop={10} accessibilityLabel="Anulează răspunsul">
+            <Pressable onPress={() => setReplyTo(null)} hitSlop={10} accessibilityLabel={t.cancelReply}>
               <Ionicons name="close" size={15} color={c.brand} />
             </Pressable>
           </View>
@@ -445,7 +445,7 @@ export default function ProjectDetailScreen() {
             onSubmitEditing={send}
             returnKeyType="send"
             maxLength={2000}
-            placeholder={replyTo ? 'Scrie un răspuns…' : 'Scrie un comentariu…'}
+            placeholder={replyTo ? t.replyPlaceholder : t.commentPlaceholder}
             placeholderTextColor={c.textSecondary}
             underlineColorAndroid="transparent"
             style={[
@@ -458,7 +458,7 @@ export default function ProjectDetailScreen() {
             onPress={send}
             disabled={!draft.trim()}
             accessibilityRole="button"
-            accessibilityLabel="Trimite comentariul"
+            accessibilityLabel={t.send}
             style={[styles.send, { backgroundColor: c.brand, opacity: draft.trim() ? 1 : 0.4 }]}>
             <Ionicons name="send" size={17} color={c.onBrand} />
           </Pressable>

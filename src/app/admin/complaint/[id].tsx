@@ -14,6 +14,8 @@ import { EmptyState, LoadingView } from '@/components/ui/state-views';
 import { COMPLAINT_CATEGORY, COMPLAINT_STATUS } from '@/constants/civic';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useLocale, useT } from '@/i18n';
+import { adminDetailText } from '@/i18n/adminDetail';
 import { formatDate, responseWindow } from '@/lib/date';
 import { shortRef } from '@/lib/id';
 
@@ -24,6 +26,8 @@ const NEEDS_RESPONSE: ComplaintStatus[] = ['RESOLVED', 'REJECTED'];
 
 export default function AdminComplaintScreen() {
   const c = useTheme();
+  const t = useT(adminDetailText);
+  const loc = useLocale();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: cm, isLoading } = useComplaint(id);
   const update = useAdminUpdateComplaint();
@@ -37,13 +41,13 @@ export default function AdminComplaintScreen() {
       <View style={{ flex: 1, backgroundColor: c.background }}>
         <SafeAreaView edges={['top']} style={{ backgroundColor: c.brandDeep }}>
           <View style={styles.bar}>
-            <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Înapoi">
+            <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel={t.back}>
               <Ionicons name="arrow-back" size={24} color={c.onBrand} />
             </Pressable>
-            <Text style={[styles.barTitle, { color: c.onBrand }]}>Sesizare</Text>
+            <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.complaintBar}</Text>
           </View>
         </SafeAreaView>
-        {isLoading ? <LoadingView /> : <EmptyState icon="alert-circle-outline" title="Sesizare negăsită" />}
+        {isLoading ? <LoadingView /> : <EmptyState icon="alert-circle-outline" title={t.complaintNotFound} />}
       </View>
     );
   }
@@ -67,7 +71,7 @@ export default function AdminComplaintScreen() {
         onSuccess: () => router.back(),
         onError: (e: unknown) => {
           const msg = (e as { message?: string })?.message;
-          setError(msg ?? 'Nu am putut salva. Încearcă din nou.');
+          setError(msg ?? t.complaintSaveFailed);
         },
       },
     );
@@ -79,10 +83,10 @@ export default function AdminComplaintScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView edges={['top']} style={{ backgroundColor: c.brandDeep }}>
         <View style={styles.bar}>
-          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Înapoi">
+          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel={t.back}>
             <Ionicons name="arrow-back" size={24} color={c.onBrand} />
           </Pressable>
-          <Text style={[styles.barTitle, { color: c.onBrand }]}>Sesizare</Text>
+          <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.complaintBar}</Text>
           <Text style={styles.barRef}>{shortRef(cm.id)}</Text>
         </View>
       </SafeAreaView>
@@ -90,7 +94,7 @@ export default function AdminComplaintScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Plaque style={styles.card}>
           <View style={styles.cardTop}>
-            <Text style={[styles.cat, { color: c.textSecondary }]}>{cat.label}</Text>
+            <Text style={[styles.cat, { color: c.textSecondary }]}>{cat.label[loc]}</Text>
             <StatusPill status={cm.status} />
           </View>
           <Text style={[styles.title, { color: c.text }]}>{cm.title}</Text>
@@ -104,14 +108,12 @@ export default function AdminComplaintScreen() {
           <View style={styles.metaRow}>
             <Ionicons name="person-outline" size={14} color={c.brand} />
             <Text style={[styles.meta, { color: c.textSecondary }]}>
-              {cm.author.fullName} · {formatDate(cm.createdAt)}
+              {cm.author.fullName} · {formatDate(cm.createdAt, loc)}
             </Text>
           </View>
           {w ? (
             <Text style={[styles.window, { color: w.remaining <= 0 ? c.accentPressed : c.amber }]}>
-              {w.remaining <= 0
-                ? `Termen depășit cu ${Math.abs(w.remaining)} zile`
-                : `${w.remaining} din ${w.total} zile rămase`}
+              {w.remaining <= 0 ? t.overdueBy(Math.abs(w.remaining)) : t.windowLeft(w.remaining, w.total)}
             </Text>
           ) : null}
           {cm.photoUrl ? <Image source={{ uri: cm.photoUrl }} style={styles.photo} contentFit="cover" /> : null}
@@ -119,12 +121,12 @@ export default function AdminComplaintScreen() {
 
         {cm.adminResponse ? (
           <Plaque borderColor={c.green} style={styles.card}>
-            <Text style={[styles.sectionLabel, { color: c.green }]}>RĂSPUNSUL CURENT</Text>
+            <Text style={[styles.sectionLabel, { color: c.green }]}>{t.currentResponse}</Text>
             <Text style={[styles.body, { color: c.text }]}>{cm.adminResponse}</Text>
           </Plaque>
         ) : null}
 
-        <Text style={[styles.label, { color: c.textSecondary }]}>Status</Text>
+        <Text style={[styles.label, { color: c.textSecondary }]}>{t.statusLabel}</Text>
         <View style={styles.statuses}>
           {STATUSES.map((s) => {
             const active = next === s;
@@ -136,20 +138,18 @@ export default function AdminComplaintScreen() {
                 accessibilityState={{ selected: active }}
                 style={[styles.status, { borderColor: active ? c.brand : c.line, backgroundColor: active ? c.brandWash : c.surface }]}>
                 <Text style={{ fontFamily: Fonts.semibold, fontSize: 12.5, color: active ? c.brand : c.text }}>
-                  {COMPLAINT_STATUS[s].label}
+                  {COMPLAINT_STATUS[s].label[loc]}
                 </Text>
               </Pressable>
             );
           })}
         </View>
 
-        <Text style={[styles.label, { color: c.textSecondary }]}>
-          Răspuns către cetățean {mustExplain ? '· obligatoriu' : '· opțional'}
-        </Text>
+        <Text style={[styles.label, { color: c.textSecondary }]}>{t.responseLabel(mustExplain)}</Text>
         <TextInput
           value={response}
           onChangeText={setResponse}
-          placeholder={mustExplain ? 'Explică decizia — textul ajunge la cetățean.' : 'Adaugă un răspuns (opțional)…'}
+          placeholder={mustExplain ? t.responseRequiredPlaceholder : t.responseOptionalPlaceholder}
           placeholderTextColor={c.textSecondary}
           underlineColorAndroid="transparent"
           maxLength={2000}
@@ -164,19 +164,17 @@ export default function AdminComplaintScreen() {
         {changing ? (
           <View style={[styles.notice, { backgroundColor: c.brandWash, borderColor: c.brand }]}>
             <Ionicons name="notifications-outline" size={16} color={c.brand} />
-            <Text style={[styles.noticeText, { color: c.brand }]}>
-              Schimbarea statusului trimite o notificare autorului sesizării.
-            </Text>
+            <Text style={[styles.noticeText, { color: c.brand }]}>{t.statusNotice}</Text>
           </View>
         ) : null}
 
         {mustExplain && text.length > 0 && text.length < 4 ? (
-          <Text style={[styles.hint, { color: c.accentPressed }]}>Explicația trebuie să aibă minim 4 caractere.</Text>
+          <Text style={[styles.hint, { color: c.accentPressed }]}>{t.responseTooShort}</Text>
         ) : null}
         {error ? <Text style={[styles.hint, { color: c.accentPressed }]}>{error}</Text> : null}
 
         <Button
-          title={update.isPending ? 'Se salvează…' : 'Salvează'}
+          title={update.isPending ? t.saving : t.save}
           icon="checkmark"
           onPress={save}
           disabled={!canSave || update.isPending}

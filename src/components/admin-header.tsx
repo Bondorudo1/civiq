@@ -3,6 +3,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useT } from '@/i18n';
+import { adminTabsText } from '@/i18n/adminTabs';
 
 /**
  * The primărie bar. Deliberately a deeper teal than the citizen header, with a
@@ -11,6 +13,7 @@ import { useTheme } from '@/hooks/use-theme';
  */
 export function AdminHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   const c = useTheme();
+  const t = useT(adminTabsText);
   return (
     <SafeAreaView edges={['top']} style={{ backgroundColor: c.brandDeep }}>
       <View style={styles.row}>
@@ -25,7 +28,7 @@ export function AdminHeader({ title, subtitle }: { title: string; subtitle?: str
           ) : null}
         </View>
         <View style={styles.plate}>
-          <Text style={styles.plateText}>PRIMĂRIE</Text>
+          <Text style={styles.plateText}>{t.plate}</Text>
         </View>
       </View>
     </SafeAreaView>

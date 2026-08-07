@@ -12,6 +12,8 @@ import { Tag } from '@/components/ui/tag';
 import { COMPLAINT_CATEGORY, DEPARTMENT } from '@/constants/civic';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useLocale, useT } from '@/i18n';
+import { complaintDetailText } from '@/i18n/complaintDetail';
 import { formatDate } from '@/lib/date';
 import { shortRef } from '@/lib/id';
 
@@ -19,6 +21,8 @@ type Step = { label: string; date: string | null; done: boolean; current?: boole
 
 export default function ComplaintDetailScreen() {
   const c = useTheme();
+  const t = useT(complaintDetailText);
+  const loc = useLocale();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: cm, isLoading } = useComplaint(id);
 
@@ -26,17 +30,17 @@ export default function ComplaintDetailScreen() {
 
   const steps: Step[] = cm
     ? [
-        { label: 'Trimisă', date: cm.createdAt, done: true, color: c.brand },
+        { label: t.stepSubmitted, date: cm.createdAt, done: true, color: c.brand },
         {
-          label: 'În lucru',
+          label: t.stepInProgress,
           date: cm.status !== 'NEW' ? cm.updatedAt : null,
           done: cm.status !== 'NEW',
           current: cm.status === 'IN_PROGRESS',
           color: c.amber,
         },
         cm.status === 'REJECTED'
-          ? { label: 'Respinsă', date: cm.updatedAt, done: true, color: c.statusRejected }
-          : { label: 'Rezolvată', date: cm.status === 'RESOLVED' ? cm.updatedAt : null, done: cm.status === 'RESOLVED', color: c.green },
+          ? { label: t.stepRejected, date: cm.updatedAt, done: true, color: c.statusRejected }
+          : { label: t.stepResolved, date: cm.status === 'RESOLVED' ? cm.updatedAt : null, done: cm.status === 'RESOLVED', color: c.green },
       ]
     : [];
 
@@ -46,13 +50,13 @@ export default function ComplaintDetailScreen() {
         <SafeAreaView edges={['top']} style={{ backgroundColor: c.brand }}>
           <View style={styles.bar}>
             <Ionicons name="arrow-back" size={24} color={c.onBrand} onPress={() => router.back()} />
-            <Text style={[styles.barTitle, { color: c.onBrand }]}>Sesizare</Text>
+            <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.screenTitle}</Text>
           </View>
         </SafeAreaView>
         {isLoading ? (
-          <LoadingView label="Se încarcă…" />
+          <LoadingView label={t.loading} />
         ) : (
-          <EmptyState icon="alert-circle-outline" title="Sesizare negăsită" message="Această sesizare nu există sau nu îți aparține." />
+          <EmptyState icon="alert-circle-outline" title={t.notFoundTitle} message={t.notFoundMessage} />
         )}
       </View>
     );
@@ -63,21 +67,21 @@ export default function ComplaintDetailScreen() {
       <SafeAreaView edges={['top']} style={{ backgroundColor: c.brand }}>
         <View style={styles.bar}>
           <Ionicons name="arrow-back" size={24} color={c.onBrand} onPress={() => router.back()} />
-          <Text style={[styles.barTitle, { color: c.onBrand }]}>Sesizare</Text>
+          <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.screenTitle}</Text>
           <Text style={styles.barRef}>{shortRef(cm.id)}</Text>
         </View>
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.metaRow}>
-          {cat ? <Tag label={cat.label} bg={cat.bg} fg={cat.fg} icon={cat.icon} /> : null}
+          {cat ? <Tag label={cat.label[loc]} bg={cat.bg} fg={cat.fg} icon={cat.icon} /> : null}
           {cm ? <StatusPill status={cm.status} /> : null}
         </View>
 
         <Text style={[styles.title, { color: c.text }]}>{cm?.title}</Text>
         <View style={styles.deptRow}>
           <Ionicons name="business-outline" size={15} color={c.brand} />
-          <Text style={[styles.dept, { color: c.text }]}>Responsabil: {DEPARTMENT[cm.category]}</Text>
+          <Text style={[styles.dept, { color: c.text }]}>{t.responsible(DEPARTMENT[cm.category][loc])}</Text>
         </View>
         <Text style={[styles.text, { color: c.textSecondary }]}>{cm?.description}</Text>
 
@@ -90,7 +94,7 @@ export default function ComplaintDetailScreen() {
           </View>
         ) : null}
 
-        <Text style={[styles.section, { color: c.textSecondary }]}>EVOLUȚIE</Text>
+        <Text style={[styles.section, { color: c.textSecondary }]}>{t.timeline}</Text>
         <View style={styles.timeline}>
           {steps.map((s, i) => (
             <View key={s.label} style={styles.step}>
@@ -102,7 +106,7 @@ export default function ComplaintDetailScreen() {
               </View>
               <View style={styles.stepBody}>
                 <Text style={[styles.stepLabel, { color: s.done ? c.text : c.muted }]}>{s.label}</Text>
-                {s.date ? <Text style={[styles.stepDate, { color: c.muted }]}>{formatDate(s.date)}</Text> : null}
+                {s.date ? <Text style={[styles.stepDate, { color: c.muted }]}>{formatDate(s.date, loc)}</Text> : null}
               </View>
             </View>
           ))}
@@ -112,7 +116,7 @@ export default function ComplaintDetailScreen() {
           <Plaque borderColor={c.brand} style={styles.response}>
             <View style={styles.responseHead}>
               <Ionicons name="business-outline" size={16} color={c.brand} />
-              <Text style={[styles.responseLabel, { color: c.brand }]}>Răspunsul primăriei</Text>
+              <Text style={[styles.responseLabel, { color: c.brand }]}>{t.adminResponse}</Text>
             </View>
             <Text style={[styles.text, { color: c.text }]}>{cm.adminResponse}</Text>
           </Plaque>

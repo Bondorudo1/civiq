@@ -5,6 +5,8 @@ import type { Post } from '@/api/types';
 import { POST_TYPE } from '@/constants/civic';
 import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useLocale, useT } from '@/i18n';
+import { homeText } from '@/i18n/home';
 import { deadlineLabel } from '@/lib/date';
 
 import { Plaque } from './ui/plaque';
@@ -12,17 +14,19 @@ import { Tag } from './ui/tag';
 
 export function ProjectCard({ post, onPress }: { post: Post; onPress?: () => void }) {
   const c = useTheme();
+  const loc = useLocale();
+  const t = useT(homeText);
   const cat = POST_TYPE[post.type];
   const closed = post.status === 'CLOSED';
-  const dl = deadlineLabel(post.deadline);
+  const dl = deadlineLabel(post.deadline, loc);
 
   return (
     <Plaque onPress={onPress} borderColor="#CFE3E7">
       <View style={styles.topRow}>
-        <Tag label={cat.label} bg={cat.bg} fg={cat.fg} icon={cat.icon} />
+        <Tag label={cat.label[loc]} bg={cat.bg} fg={cat.fg} icon={cat.icon} />
         {closed ? (
           <View style={[styles.verdict, { borderColor: c.green }]}>
-            <Text style={[styles.verdictText, { color: c.green }]}>Verdict</Text>
+            <Text style={[styles.verdictText, { color: c.green }]}>{t.verdict}</Text>
           </View>
         ) : dl ? (
           <Text style={[styles.deadline, { color: c.amber }]}>{dl}</Text>

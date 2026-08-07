@@ -10,7 +10,8 @@ import { Plaque } from '@/components/ui/plaque';
 import { EmptyState, ErrorView, LoadingView } from '@/components/ui/state-views';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { VERIFICATION_LABEL } from '@/hooks/use-verification';
+import { useLocale, useT } from '@/i18n';
+import { adminTabsText } from '@/i18n/adminTabs';
 import { formatDate } from '@/lib/date';
 
 /** Operators see enough to check the claim, not the whole identifier. */
@@ -18,6 +19,8 @@ const maskIdnp = (idnp: string) => `${idnp.slice(0, 4)}•••••${idnp.sli
 
 function RequestCard({ item }: { item: VerificationRequest }) {
   const c = useTheme();
+  const t = useT(adminTabsText);
+  const loc = useLocale();
   const decide = useAdminDecideVerification();
   const [reason, setReason] = useState('');
   const [refusing, setRefusing] = useState(false);
@@ -27,11 +30,11 @@ function RequestCard({ item }: { item: VerificationRequest }) {
 
   const approve = () =>
     Alert.alert(
-      'Aprobi cererea?',
-      `${item.user.fullName} va putea comenta, reacționa și depune sesizări.`,
+      t.approveTitle,
+      t.approveBody(item.user.fullName),
       [
-        { text: 'Anulează', style: 'cancel' },
-        { text: 'Aprobă', onPress: () => decide.mutate({ id: item.id, status: 'VERIFIED' }) },
+        { text: t.cancel, style: 'cancel' },
+        { text: t.approve, onPress: () => decide.mutate({ id: item.id, status: 'VERIFIED' }) },
       ],
     );
 
@@ -42,7 +45,7 @@ function RequestCard({ item }: { item: VerificationRequest }) {
           {item.user.fullName}
         </Text>
         <View style={[styles.pill, { backgroundColor: tone }]}>
-          <Text style={styles.pillText}>{VERIFICATION_LABEL[item.status].toUpperCase()}</Text>
+          <Text style={styles.pillText}>{t.verification[item.status].toUpperCase()}</Text>
         </View>
       </View>
 
@@ -58,10 +61,10 @@ function RequestCard({ item }: { item: VerificationRequest }) {
           {item.address}
         </Text>
       </View>
-      <Text style={[styles.date, { color: c.muted }]}>Depusă {formatDate(item.createdAt)}</Text>
+      <Text style={[styles.date, { color: c.muted }]}>{t.filedOn(formatDate(item.createdAt, loc))}</Text>
 
       {item.reason ? (
-        <Text style={[styles.reasonShown, { color: c.accentPressed }]}>Motiv: {item.reason}</Text>
+        <Text style={[styles.reasonShown, { color: c.accentPressed }]}>{t.reasonShown(item.reason)}</Text>
       ) : null}
 
       {pending ? (
@@ -70,7 +73,7 @@ function RequestCard({ item }: { item: VerificationRequest }) {
             <TextInput
               value={reason}
               onChangeText={setReason}
-              placeholder="De ce respingi cererea? Motivul ajunge la locuitor."
+              placeholder={t.rejectPlaceholder}
               placeholderTextColor={c.textSecondary}
               underlineColorAndroid="transparent"
               maxLength={300}
@@ -83,27 +86,27 @@ function RequestCard({ item }: { item: VerificationRequest }) {
             />
             <View style={styles.actions}>
               <Pressable onPress={() => setRefusing(false)} style={[styles.btn, styles.ghost, { borderColor: c.line }]}>
-                <Text style={[styles.btnText, { color: c.textSecondary }]}>Anulează</Text>
+                <Text style={[styles.btnText, { color: c.textSecondary }]}>{t.cancel}</Text>
               </Pressable>
               <Pressable
                 onPress={() => decide.mutate({ id: item.id, status: 'REJECTED', reason })}
                 disabled={reason.trim().length < 3 || decide.isPending}
                 style={[styles.btn, { backgroundColor: c.accent, opacity: reason.trim().length < 3 ? 0.5 : 1 }]}>
-                <Text style={[styles.btnText, { color: '#FFFFFF' }]}>Respinge</Text>
+                <Text style={[styles.btnText, { color: '#FFFFFF' }]}>{t.reject}</Text>
               </Pressable>
             </View>
           </View>
         ) : (
           <View style={styles.actions}>
             <Pressable onPress={() => setRefusing(true)} style={[styles.btn, styles.ghost, { borderColor: c.line }]}>
-              <Text style={[styles.btnText, { color: c.accentPressed }]}>Respinge</Text>
+              <Text style={[styles.btnText, { color: c.accentPressed }]}>{t.reject}</Text>
             </Pressable>
             <Pressable
               onPress={approve}
               disabled={decide.isPending}
               style={[styles.btn, { backgroundColor: c.brand }]}>
               <Ionicons name="checkmark" size={15} color={c.onBrand} />
-              <Text style={[styles.btnText, { color: c.onBrand }]}>Aprobă</Text>
+              <Text style={[styles.btnText, { color: c.onBrand }]}>{t.approve}</Text>
             </Pressable>
           </View>
         )
@@ -114,6 +117,7 @@ function RequestCard({ item }: { item: VerificationRequest }) {
 
 export default function AdminResidentsScreen() {
   const c = useTheme();
+  const t = useT(adminTabsText);
   const { data, isLoading, isError, refetch } = useAdminVerifications();
   const all = data ?? [];
   const waiting = all.filter((v) => v.status === 'PENDING');
@@ -123,14 +127,14 @@ export default function AdminResidentsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
       <AdminHeader
-        title="Locuitori"
-        subtitle={waiting.length ? `${waiting.length} cereri în așteptare` : 'Nicio cerere în așteptare'}
+        title={t.residentsTitle}
+        subtitle={waiting.length ? t.residentsWaiting(waiting.length) : t.residentsNoneWaiting}
       />
 
       <View style={styles.filterRow}>
         {[
-          { key: true, label: `În așteptare (${waiting.length})` },
-          { key: false, label: `Toate (${all.length})` },
+          { key: true, label: t.filterPending(waiting.length) },
+          { key: false, label: t.filterAllCount(all.length) },
         ].map((f) => {
           const active = onlyPending === f.key;
           return (
@@ -160,14 +164,14 @@ export default function AdminResidentsScreen() {
         )}
         ListEmptyComponent={
           isLoading ? (
-            <LoadingView label="Se încarcă cererile…" />
+            <LoadingView label={t.residentsLoading} />
           ) : isError ? (
             <ErrorView onRetry={() => refetch()} />
           ) : (
             <EmptyState
               icon="shield-checkmark-outline"
-              title="Nicio cerere"
-              message="Cererile de verificare de la locuitori apar aici."
+              title={t.residentsEmptyTitle}
+              message={t.residentsEmptyMessage}
             />
           )
         }

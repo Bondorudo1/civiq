@@ -21,14 +21,8 @@ import type { ChatMessage } from '@/api/types';
 import { WaterTexture } from '@/components/water-texture';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-
-/** Openers that show the assistant's range without the citizen having to guess. */
-const SUGGESTIONS = [
-  'Ce acte îmi trebuie pentru autorizația de construcție?',
-  'Cum depun o cerere la ghișeul unic?',
-  'În cât timp răspunde primăria la o sesizare?',
-  'Unde plătesc impozitul pe bunuri imobiliare?',
-];
+import { useT } from '@/i18n';
+import { assistantText } from '@/i18n/assistant';
 
 const MAX = 1000;
 
@@ -42,6 +36,7 @@ const enter = Platform.OS === 'web' ? undefined : FadeInDown.duration(260);
 
 export default function AskScreen() {
   const c = useTheme();
+  const t = useT(assistantText);
   const chat = useChatWithBot();
   const scroller = useRef<ScrollView>(null);
   const seq = useRef(0);
@@ -96,15 +91,15 @@ export default function AskScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView edges={['top']} style={{ backgroundColor: c.brand }}>
         <View style={styles.bar}>
-          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Înapoi">
+          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel={t.back}>
             <Ionicons name="arrow-back" size={24} color={c.onBrand} />
           </Pressable>
           <View style={styles.barTitleWrap}>
-            <Text style={[styles.barTitle, { color: c.onBrand }]}>Asistentul primăriei</Text>
-            <Text style={styles.barSub}>Răspunde din regulamentele orașului</Text>
+            <Text style={[styles.barTitle, { color: c.onBrand }]}>{t.barTitle}</Text>
+            <Text style={styles.barSub}>{t.barSub}</Text>
           </View>
           {!empty ? (
-            <Pressable onPress={reset} hitSlop={10} accessibilityRole="button" accessibilityLabel="Conversație nouă">
+            <Pressable onPress={reset} hitSlop={10} accessibilityRole="button" accessibilityLabel={t.newChat}>
               <Ionicons name="create-outline" size={22} color={c.onBrand} />
             </Pressable>
           ) : null}
@@ -123,16 +118,13 @@ export default function AskScreen() {
               <WaterTexture width={210} height={150} color={c.brandBright} />
             </View>
             <Ionicons name="sparkles-outline" size={30} color={c.brand} />
-            <Text style={[styles.introTitle, { color: c.text }]}>Ce vrei să afli?</Text>
-            <Text style={[styles.introText, { color: c.textSecondary }]}>
-              Întreabă despre acte, taxe, programul ghișeelor sau deciziile consiliului. Îți arăt
-              și sursele.
-            </Text>
+            <Text style={[styles.introTitle, { color: c.text }]}>{t.introTitle}</Text>
+            <Text style={[styles.introText, { color: c.textSecondary }]}>{t.introText}</Text>
           </View>
         ) : null}
 
         {empty
-          ? SUGGESTIONS.map((s) => (
+          ? t.suggestions.map((s) => (
               <Pressable
                 key={s}
                 onPress={() => send(s)}
@@ -157,12 +149,10 @@ export default function AskScreen() {
                 <Ionicons name="alert" size={13} color="#FFFFFF" />
               </View>
               <View style={[styles.botBubble, { backgroundColor: c.accentWash, borderColor: c.accent }]}>
-                <Text style={[styles.failText, { color: c.accentPressed }]}>
-                  Asistentul nu a răspuns. Încearcă din nou.
-                </Text>
+                <Text style={[styles.failText, { color: c.accentPressed }]}>{t.chatFailed}</Text>
                 <Pressable onPress={() => retry(m.id, m.content)} hitSlop={8} style={styles.retry}>
                   <Ionicons name="refresh" size={14} color={c.accentPressed} />
-                  <Text style={[styles.retryText, { color: c.accentPressed }]}>Reîncearcă</Text>
+                  <Text style={[styles.retryText, { color: c.accentPressed }]}>{t.retry}</Text>
                 </Pressable>
               </View>
             </Animated.View>
@@ -202,15 +192,13 @@ export default function AskScreen() {
             </View>
             <View style={[styles.botBubble, styles.typing, { backgroundColor: c.surface, borderColor: c.line }]}>
               <ActivityIndicator size="small" color={c.brand} />
-              <Text style={[styles.typingText, { color: c.textSecondary }]}>Caut în documente…</Text>
+              <Text style={[styles.typingText, { color: c.textSecondary }]}>{t.typing}</Text>
             </View>
           </View>
         ) : null}
 
         {!empty ? (
-          <Text style={[styles.disclaimer, { color: c.muted }]}>
-            Informativ. Pentru situații specifice, confirmă la ghișeul primăriei.
-          </Text>
+          <Text style={[styles.disclaimer, { color: c.muted }]}>{t.disclaimer}</Text>
         ) : null}
       </ScrollView>
 
@@ -218,7 +206,7 @@ export default function AskScreen() {
         <TextInput
           value={draft}
           onChangeText={setDraft}
-          placeholder={empty ? 'Scrie întrebarea ta…' : 'Întreabă altceva…'}
+          placeholder={empty ? t.composerFirst : t.composerMore}
           placeholderTextColor={c.textSecondary}
           underlineColorAndroid="transparent"
           maxLength={MAX}
@@ -233,7 +221,7 @@ export default function AskScreen() {
           onPress={() => send()}
           disabled={draft.trim().length < 3 || chat.isPending}
           accessibilityRole="button"
-          accessibilityLabel="Trimite întrebarea"
+          accessibilityLabel={t.sendQuestion}
           style={[
             styles.send,
             { backgroundColor: c.brand, opacity: draft.trim().length < 3 || chat.isPending ? 0.4 : 1 },
