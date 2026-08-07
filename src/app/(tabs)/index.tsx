@@ -10,9 +10,11 @@ import { AppHeader } from '@/components/app-header';
 import { ProjectCard } from '@/components/project-card';
 import { SectionLabel } from '@/components/ui/section-label';
 import { EmptyState, LoadingView } from '@/components/ui/state-views';
+import { VerifyGate } from '@/components/verify-gate';
 import { WaterTexture } from '@/components/water-texture';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useVerification } from '@/hooks/use-verification';
 import { greeting } from '@/lib/date';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
@@ -50,6 +52,7 @@ export default function HomeScreen() {
   const c = useTheme();
   const router = useRouter();
   const { data: me } = useMe();
+  const { canParticipate } = useVerification();
   const { data: posts, isLoading: postsLoading } = usePosts();
   const { data: complaints } = useComplaints();
 
@@ -86,6 +89,13 @@ export default function HomeScreen() {
             </View>
           </LinearGradient>
         </Animated.View>
+
+        {/* Learn the rule here rather than by bouncing off a locked action later. */}
+        {!canParticipate ? (
+          <Animated.View entering={FadeInDown.duration(400).delay(90)} style={styles.gate}>
+            <VerifyGate action="participi" />
+          </Animated.View>
+        ) : null}
 
         <Animated.View entering={FadeInDown.duration(400).delay(120)} style={styles.qaRow}>
           <QuickAction icon="megaphone-outline" label={'Raportează\no problemă'} bg={c.accentWash} fg={c.accentPressed} onPress={() => router.push('/complaint/new')} />
@@ -144,6 +154,7 @@ const styles = StyleSheet.create({
   },
   statNum: { fontFamily: Fonts.bold, fontSize: 15, color: '#FFFFFF' },
   statLabel: { fontFamily: Fonts.regular, fontSize: 11.5, color: '#DCF0F4' },
+  gate: { paddingHorizontal: Spacing.three },
   qaRow: { flexDirection: 'row', gap: Spacing.three },
   qa: { flex: 1, borderWidth: 1, borderRadius: Radius.lg, padding: Spacing.three, gap: Spacing.two },
   qaIcon: { width: 40, height: 40, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },

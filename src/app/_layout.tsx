@@ -72,7 +72,14 @@ export default function RootLayout() {
         <ThemeProvider value={CiviqLight}>
           {/* Drilling into a detail slides in from the right (it lives "inside" the list).
               Crossing the auth boundary fades — it's a change of context, not of depth. */}
-          <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+          {/* `title` is invisible on native (headers are hidden) but becomes the
+              browser tab name on web — which is what a scanned QR link shows. */}
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: 'slide_from_right',
+              title: 'CiviQ — Vocea ta pentru Cahul',
+            }}>
             {/* The primărie panel is a separate shell, not a section of the citizen app. */}
             <Stack.Protected guard={isAuthed && isAdmin}>
               <Stack.Screen name="(admin)" options={{ animation: 'fade' }} />
@@ -86,6 +93,7 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
               <Stack.Screen name="notifications" />
               <Stack.Screen name="ask" />
+              <Stack.Screen name="verify" options={{ animation: 'slide_from_bottom' }} />
               <Stack.Screen name="project/[id]" />
               {/* Composing a complaint rises from the bottom: a task, not a destination. */}
               <Stack.Screen name="complaint/new" options={{ animation: 'slide_from_bottom' }} />

@@ -3,7 +3,7 @@
  * real API later (flip USE_MOCK in service.ts). Illustrative Cahul civic data.
  */
 
-import type { Author, Comment, Complaint, Notification, Post, User } from './types';
+import type { Author, Comment, Complaint, Notification, Post, User, VerificationRequest } from './types';
 
 const primaria: Author = { id: 'city', fullName: 'Primăria Cahul' };
 const ion: Author = { id: 'u1', fullName: 'Ion Popescu' };
@@ -18,6 +18,8 @@ export const mockUser: User = {
   role: 'CITIZEN',
   locale: 'ro',
   createdAt: '2026-07-01T09:00:00Z',
+  // Starts unverified so the participation gate is visible from the first screen.
+  verification: 'UNVERIFIED',
 };
 
 /** The primărie operator. Real login returns whichever user the token belongs to. */
@@ -28,6 +30,7 @@ export const mockAdmin: User = {
   role: 'ADMIN',
   locale: 'ro',
   createdAt: '2026-06-01T09:00:00Z',
+  verification: 'VERIFIED',
 };
 
 export const mockPosts: Post[] = [
@@ -221,6 +224,37 @@ export const mockComplaints: Complaint[] = [
     author: ion,
     createdAt: '2026-08-06T07:30:00Z',
     updatedAt: '2026-08-06T07:30:00Z',
+  },
+];
+
+/** The primărie's review queue. Ion's own request is appended when he submits. */
+export const mockVerifications: VerificationRequest[] = [
+  {
+    id: 'v1',
+    user: maria,
+    idnp: '2004008123456',
+    address: 'str. Independenței 12, ap. 4',
+    status: 'PENDING',
+    reason: null,
+    createdAt: '2026-08-06T15:20:00Z',
+  },
+  {
+    id: 'v2',
+    user: andrei,
+    idnp: '2003005998877',
+    address: 'str. Victoriei 3',
+    status: 'PENDING',
+    reason: null,
+    createdAt: '2026-08-07T08:05:00Z',
+  },
+  {
+    id: 'v3',
+    user: elena,
+    idnp: '2001002445566',
+    address: 'str. Ștefan cel Mare 41',
+    status: 'VERIFIED',
+    reason: null,
+    createdAt: '2026-08-01T11:00:00Z',
   },
 ];
 

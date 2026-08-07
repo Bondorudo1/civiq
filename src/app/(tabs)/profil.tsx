@@ -9,8 +9,10 @@ import { AppHeader } from '@/components/app-header';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Plaque } from '@/components/ui/plaque';
+import { VerifyGate } from '@/components/verify-gate';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useVerification } from '@/hooks/use-verification';
 import { useAuth } from '@/store/auth';
 
 function initials(name?: string): string {
@@ -30,6 +32,7 @@ export default function ProfilScreen() {
   const { data: me } = useMe();
   const signOut = useAuth((s) => s.signOut);
   const updateMe = useUpdateMe();
+  const { canParticipate } = useVerification();
 
   // PATCH /api/me takes either field on its own.
   const [editing, setEditing] = useState(false);
@@ -95,6 +98,21 @@ export default function ProfilScreen() {
           </Plaque>
         ) : null}
 
+        <Text style={[styles.label, { color: c.textSecondary }]}>Statut</Text>
+        {canParticipate ? (
+          <Plaque borderColor={c.green} style={styles.statusCard}>
+            <Ionicons name="shield-checkmark" size={20} color={c.green} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.statusTitle, { color: c.green }]}>Locuitor verificat</Text>
+              <Text style={[styles.statusBody, { color: c.textSecondary }]}>
+                Poți comenta, reacționa și depune sesizări.
+              </Text>
+            </View>
+          </Plaque>
+        ) : (
+          <VerifyGate action="participi" />
+        )}
+
         <Text style={[styles.label, { color: c.textSecondary }]}>Limbă</Text>
         <View style={styles.langRow}>
           {(['ro', 'ru'] as const).map((l) => {
@@ -131,6 +149,9 @@ const styles = StyleSheet.create({
   name: { fontFamily: Fonts.semibold, fontSize: 17 },
   email: { fontFamily: Fonts.regular, fontSize: 13.5, marginTop: 2 },
   label: { fontFamily: Fonts.medium, fontSize: 12.5, letterSpacing: 0.3, marginTop: Spacing.two },
+  statusCard: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  statusTitle: { fontFamily: Fonts.semibold, fontSize: 14.5 },
+  statusBody: { fontFamily: Fonts.regular, fontSize: 12.5, lineHeight: 17, marginTop: 1 },
   edit: { gap: Spacing.three },
   editBtns: { flexDirection: 'row', gap: Spacing.two },
   langRow: { gap: Spacing.two },

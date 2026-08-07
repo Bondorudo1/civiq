@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring } from 'react-native-reanimated';
@@ -18,11 +18,13 @@ import {
 import type { AiLanguage, Comment, ReactionKind } from '@/api/types';
 import { Button } from '@/components/ui/button';
 import { Plaque } from '@/components/ui/plaque';
+import { VerifyGate } from '@/components/verify-gate';
 import { EmptyState, LoadingView } from '@/components/ui/state-views';
 import { Tag } from '@/components/ui/tag';
 import { POST_TYPE } from '@/constants/civic';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useVerification } from '@/hooks/use-verification';
 import { deadlineLabel } from '@/lib/date';
 
 function initials(name: string): string {
@@ -40,14 +42,18 @@ function CommentRow({
   reply,
   onReply,
   cityId,
+  locked,
 }: {
   comment: Comment;
   reply?: boolean;
   onReply?: (c: Comment) => void;
   /** The post's own author — only the city can publish a consultation. */
   cityId?: string;
+  /** Unverified reader: the like sends them to verification instead of firing. */
+  locked?: boolean;
 }) {
   const c = useTheme();
+  const router = useRouter();
   const reactTo = useReactToComment(comment.postId);
   const remove = useDeleteComment(comment.postId);
 
@@ -66,7 +72,9 @@ function CommentRow({
   const actions = (
     <View style={styles.commentActions}>
       <Pressable
-        onPress={() => reactTo.mutate({ id: comment.id, value: 'LIKE' })}
+        onPress={() =>
+          locked ? router.push('/verify') : reactTo.mutate({ id: comment.id, value: 'LIKE' })
+        }
         hitSlop={8}
         accessibilityRole="button"
         accessibilityState={{ selected: liked }}
@@ -81,7 +89,7 @@ function CommentRow({
         </Pressable>
       ) : null}
       {/* can_delete: own comment, or ADMIN. */}
-      {comment.canDelete ? (
+      {comment.canDelete && !locked ? (
         <Pressable
           onPress={() => remove.mutate(comment.id)}
           hitSlop={8}
@@ -150,6 +158,7 @@ export default function ProjectDetailScreen() {
   const { data: post, isLoading } = usePost(id);
   const { data: comments } = useComments(id);
 
+  const { canParticipate } = useVerification();
   const [draft, setDraft] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [language, setLanguage] = useState<AiLanguage | null>(null);
@@ -163,6 +172,10 @@ export default function ProjectDetailScreen() {
   const heartScale = useSharedValue(1);
   const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: heartScale.value }] }));
   const react = (kind: ReactionKind) => {
+    if (!canParticipate) {
+      router.push('/verify');
+      return;
+    }
     if (kind === 'LIKE') {
       heartScale.value = withSequence(withSpring(1.35, { damping: 5, stiffness: 220 }), withSpring(1));
     }
@@ -382,9 +395,14 @@ export default function ProjectDetailScreen() {
 
           {roots.map((cm) => (
             <View key={cm.id}>
-              <CommentRow comment={cm} onReply={closed ? undefined : startReply} cityId={post.author.id} />
+              <CommentRow
+                comment={cm}
+                onReply={closed || !canParticipate ? undefined : startReply}
+                cityId={post.author.id}
+                locked={!canParticipate}
+              />
               {cm.replies.map((r) => (
-                <CommentRow key={r.id} comment={r} reply cityId={post.author.id} />
+                <CommentRow key={r.id} comment={r} reply cityId={post.author.id} locked={!canParticipate} />
               ))}
             </View>
           ))}
@@ -394,8 +412,12 @@ export default function ProjectDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* POST /comments answers 409 POST_CLOSED on a closed post — so don't offer it. */}
-      {closed ? (
+      {/* Reading is open to everyone; acting waits on the primărie's approval. */}
+      {!closed && !canParticipate ? (
+        <View style={[styles.composer, { backgroundColor: c.surface, borderTopColor: c.line }]}>
+          <VerifyGate action="comentezi" compact />
+        </View>
+      ) : closed ? (
         <View style={[styles.composer, styles.closedBar, { backgroundColor: c.surface, borderTopColor: c.line }]}>
           <Ionicons name="lock-closed-outline" size={15} color={c.textSecondary} />
           <Text style={[styles.closedText, { color: c.textSecondary }]}>

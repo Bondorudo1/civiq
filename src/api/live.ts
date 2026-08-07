@@ -24,6 +24,7 @@ import type {
   ReactionResult,
   Translation,
   User,
+  VerificationRequest,
 } from './types';
 
 export const liveApi = {
@@ -39,6 +40,19 @@ export const liveApi = {
   }): Promise<AuthResponse> => send('POST', '/auth/register', input),
 
   getMe: (): Promise<User> => get('/me'),
+
+  /** Pending backend work — these three don't exist in Rev 3 yet. */
+  requestVerification: (input: { idnp: string; address: string }): Promise<User> =>
+    send('POST', '/me/verification', input),
+
+  adminVerifications: (): Promise<VerificationRequest[]> =>
+    get<Page<VerificationRequest>>('/admin/verifications', { size: PAGE_SIZE }).then(items),
+
+  adminDecideVerification: (
+    id: string,
+    status: 'VERIFIED' | 'REJECTED',
+    reason?: string,
+  ): Promise<VerificationRequest> => send('PATCH', `/admin/verifications/${id}`, { status, reason }),
 
   updateMe: (patch: { fullName?: string; locale?: Locale }): Promise<User> =>
     send('PATCH', '/me', patch),

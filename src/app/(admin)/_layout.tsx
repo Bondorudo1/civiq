@@ -11,6 +11,7 @@ const ADMIN_ICONS: Record<string, IoniconName> = {
   index: 'file-tray-full',
   proiecte: 'document-text',
   anunturi: 'megaphone',
+  locuitori: 'shield-checkmark',
   cont: 'person',
 };
 
@@ -22,6 +23,7 @@ export default function AdminLayout() {
       <Tabs.Screen name="index" options={{ title: 'Sesizări' }} />
       <Tabs.Screen name="proiecte" options={{ title: 'Proiecte' }} />
       <Tabs.Screen name="anunturi" options={{ title: 'Anunțuri' }} />
+      <Tabs.Screen name="locuitori" options={{ title: 'Locuitori' }} />
       <Tabs.Screen name="cont" options={{ title: 'Cont' }} />
     </Tabs>
   );

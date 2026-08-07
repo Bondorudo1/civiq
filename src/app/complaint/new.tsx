@@ -14,7 +14,9 @@ import { Field } from '@/components/ui/field';
 import { WaterTexture } from '@/components/water-texture';
 import { COMPLAINT_CATEGORY } from '@/constants/civic';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { VerifyGate } from '@/components/verify-gate';
 import { useTheme } from '@/hooks/use-theme';
+import { useVerification } from '@/hooks/use-verification';
 import { shortRef } from '@/lib/id';
 
 const CATEGORIES = Object.keys(COMPLAINT_CATEGORY) as ComplaintCategory[];
@@ -36,6 +38,7 @@ export default function NewComplaintScreen() {
 
   const create = useCreateComplaint();
   const spell = useSpellcheck();
+  const { canParticipate } = useVerification();
 
   const needsLocation = category ? COMPLAINT_CATEGORY[category].needsLocation : false;
   const canSubmit = !!category && title.trim().length >= 5 && description.trim().length >= 10;
@@ -100,6 +103,26 @@ export default function NewComplaintScreen() {
             </View>
           </View>
         </SafeAreaView>
+      </View>
+    );
+  }
+
+  // Gate before the form, not on submit — filling in a page you can't send is worse
+  // than being told up front.
+  if (!canParticipate) {
+    return (
+      <View style={{ flex: 1, backgroundColor: c.background }}>
+        <SafeAreaView edges={['top']} style={{ backgroundColor: c.brand }}>
+          <View style={styles.bar}>
+            <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Înapoi">
+              <Ionicons name="arrow-back" size={24} color={c.onBrand} />
+            </Pressable>
+            <Text style={[styles.barTitle, { color: c.onBrand }]}>Sesizare nouă</Text>
+          </View>
+        </SafeAreaView>
+        <View style={styles.gate}>
+          <VerifyGate action="depui o sesizare" />
+        </View>
       </View>
     );
   }
@@ -286,6 +309,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   errorText: { flex: 1, fontFamily: Fonts.medium, fontSize: 12.5, lineHeight: 17 },
+  gate: { padding: Spacing.four },
   spell: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingVertical: 6 },
   spellText: { fontFamily: Fonts.semibold, fontSize: 12.5 },
   success: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },

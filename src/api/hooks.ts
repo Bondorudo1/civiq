@@ -74,6 +74,30 @@ export const useUpdateMe = () => {
   });
 };
 
+export const useRequestVerification = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.requestVerification,
+    onSuccess: (user) => qc.setQueryData(['me'], user),
+  });
+};
+
+export const useAdminVerifications = () =>
+  useQuery({ queryKey: ['admin', 'verifications'], queryFn: api.adminVerifications });
+
+export const useAdminDecideVerification = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status, reason }: { id: string; status: 'VERIFIED' | 'REJECTED'; reason?: string }) =>
+      api.adminDecideVerification(id, status, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'verifications'] });
+      qc.invalidateQueries({ queryKey: ['me'] });
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
 export const useCreateComplaint = () => {
   const qc = useQueryClient();
   return useMutation({

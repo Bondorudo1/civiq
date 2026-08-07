@@ -5,7 +5,15 @@
  */
 
 import { liveApi } from './live';
-import { mockAdmin, mockComments, mockComplaints, mockNotifications, mockPosts, mockUser } from './mock-data';
+import {
+  mockAdmin,
+  mockComments,
+  mockComplaints,
+  mockNotifications,
+  mockPosts,
+  mockUser,
+  mockVerifications,
+} from './mock-data';
 import type {
   AiLanguage,
   AskAnswer,
@@ -24,6 +32,7 @@ import type {
   Translation,
   User,
   UserRole,
+  VerificationRequest,
 } from './types';
 
 export const USE_MOCK = true;
@@ -96,6 +105,79 @@ const mockApi = {
     const unread = mockNotifications.filter((n) => !n.isRead);
     unread.forEach((n) => (n.isRead = true));
     return delay(unread.length, 150);
+  },
+
+  /**
+   * Demonstration only — no verification endpoint in API Rev 3 yet.
+   * Submitting only reaches PENDING; participation stays locked until an operator
+   * approves the request from the admin panel.
+   */
+  requestVerification: (input: { idnp: string; address: string }): Promise<User> => {
+    if (!/^\d{13}$/.test(input.idnp)) {
+      return Promise.reject({
+        code: 'VALIDATION_ERROR',
+        message: 'IDNP invalid.',
+        fields: { idnp: 'IDNP-ul are exact 13 cifre.' },
+      });
+    }
+    mockUser.verification = 'PENDING';
+    const existing = mockVerifications.find((v) => v.user.id === mockUser.id);
+    if (existing) {
+      Object.assign(existing, { ...input, status: 'PENDING', reason: null });
+    } else {
+      mockVerifications.unshift({
+        id: newId(),
+        user: { id: mockUser.id, fullName: mockUser.fullName },
+        idnp: input.idnp,
+        address: input.address,
+        status: 'PENDING',
+        reason: null,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    return delay({ ...mockUser }, 900);
+  },
+
+  /** GET /admin/verifications — the review queue, newest first. */
+  adminVerifications: (): Promise<VerificationRequest[]> => delay([...mockVerifications]),
+
+  /**
+   * PATCH /admin/verifications/{id}. Approving is what actually unlocks
+   * participation, so the resident is told either way via the notification feed.
+   */
+  adminDecideVerification: (
+    id: string,
+    status: 'VERIFIED' | 'REJECTED',
+    reason?: string,
+  ): Promise<VerificationRequest> => {
+    const target = mockVerifications.find((v) => v.id === id);
+    if (!target) return Promise.reject({ code: 'NOT_FOUND', message: 'Cererea nu există.' });
+    if (status === 'REJECTED' && !reason?.trim()) {
+      return Promise.reject({
+        code: 'VALIDATION_ERROR',
+        message: 'Motivul este obligatoriu la respingere.',
+        fields: { reason: 'Explică de ce cererea a fost respinsă.' },
+      });
+    }
+    target.status = status;
+    target.reason = reason?.trim() || null;
+    if (target.user.id === mockUser.id) mockUser.verification = status;
+
+    mockNotifications.unshift({
+      id: newId(),
+      kind: 'MANUAL',
+      source: null,
+      title: status === 'VERIFIED' ? 'Contul tău a fost verificat' : 'Cererea de verificare a fost respinsă',
+      body:
+        status === 'VERIFIED'
+          ? 'Poți acum să comentezi, să reacționezi și să depui sesizări.'
+          : (target.reason ?? 'Verifică datele introduse și încearcă din nou.'),
+      payload: null,
+      eventDate: null,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    });
+    return delay({ ...target }, 350);
   },
 
   /** PATCH /api/me — both fields optional. */

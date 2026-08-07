@@ -7,6 +7,29 @@
 export type Locale = 'ro' | 'ru';
 export type UserRole = 'CITIZEN' | 'ADMIN';
 
+/**
+ * Not in API Rev 3 — a pending change request. Reading the city's business is
+ * open to anyone; acting on it (commenting, reacting, filing a complaint) is
+ * limited to residents the primărie has confirmed, so one person is one voice.
+ *
+ * Submitting a request only reaches PENDING. Participation unlocks on VERIFIED,
+ * which an operator grants from the admin panel.
+ */
+export type VerificationStatus = 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+
+/** A resident's claim to live in Cahul, awaiting the primărie's decision. */
+export interface VerificationRequest {
+  id: string;
+  user: Author;
+  /** Moldovan national identifier: 13 digits. Shown masked to operators. */
+  idnp: string;
+  address: string;
+  status: VerificationStatus;
+  /** Why an operator refused; shown back to the resident. */
+  reason?: string | null;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -14,6 +37,8 @@ export interface User {
   role: UserRole;
   locale: Locale;
   createdAt: string;
+  /** Optional so the app still works against a backend that doesn't send it. */
+  verification?: VerificationStatus;
 }
 
 /** POST /auth/login and /auth/register both answer with this. */
