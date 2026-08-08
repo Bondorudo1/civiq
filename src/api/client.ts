@@ -140,7 +140,10 @@ export async function sendForm<T>(
       // object stringifies it to "[object Object]" and the server never gets a file.
       // The picker's blob:/data: uri is fetchable locally.
       const blob = await (await fetch(file.uri)).blob();
-      form.append(file.field, new File([blob], name, { type: blob.type || mime }));
+      // The blob's own type is ground truth on web — name the file from it, since
+      // the server (Django) validates the extension and re-derives content-type.
+      const webName = fileName(file.uri, blob.type || mime);
+      form.append(file.field, new File([blob], webName, { type: blob.type || mime }));
     } else {
       // RN's FormData takes this shape for files; the cast keeps TS's DOM types happy.
       form.append(file.field, { uri: file.uri, name, type: mime } as unknown as Blob);
