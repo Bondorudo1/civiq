@@ -231,7 +231,12 @@ const mockApi = {
       id: newId(),
       postId,
       parentId: parent?.id ?? null,
-      author: { id: mockUser.id, fullName: mockUser.fullName },
+      // An operator speaks as the city (seed posts are authored by id 'city'),
+      // which is also what makes the official nameplate styling fire.
+      author:
+        activeRole === 'ADMIN'
+          ? { id: 'city', fullName: 'Primăria Cahul' }
+          : { id: mockUser.id, fullName: mockUser.fullName },
       text,
       canDelete: true,
       likesCount: 0,

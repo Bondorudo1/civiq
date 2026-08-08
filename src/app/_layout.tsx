@@ -104,6 +104,7 @@ export default function RootLayout() {
               <Stack.Screen name="admin/complaint/[id]" />
               <Stack.Screen name="admin/post/new" options={{ animation: 'slide_from_bottom' }} />
               <Stack.Screen name="admin/post/[id]" />
+              <Stack.Screen name="admin/comments/[postId]" />
               <Stack.Screen name="admin/notification/new" options={{ animation: 'slide_from_bottom' }} />
               <Stack.Screen name="admin/notification/[id]" />
             </Stack.Protected>

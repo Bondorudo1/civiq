@@ -121,6 +121,20 @@ export default function AdminEditPostScreen() {
           {t.stats(post.likesCount, post.dislikesCount, post.commentsCount)}
         </Text>
 
+        <Pressable
+          onPress={() => router.push({ pathname: '/admin/comments/[postId]', params: { postId: post.id } })}
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            styles.discussion,
+            { borderColor: c.brand, backgroundColor: pressed ? c.brandWash : c.surface },
+          ]}>
+          <Ionicons name="chatbubbles-outline" size={17} color={c.brand} />
+          <Text style={[styles.discussionText, { color: c.brand }]}>
+            {t.moderateDiscussion(post.commentsCount)}
+          </Text>
+          <Ionicons name="chevron-forward" size={15} color={c.brand} />
+        </Pressable>
+
         <Text style={[styles.label, { color: c.textSecondary }]}>{t.fieldType}</Text>
         <View style={styles.chips}>
           {TYPES.map((pt) => {
@@ -234,6 +248,16 @@ const styles = StyleSheet.create({
   barState: { fontFamily: Fonts.bold, fontSize: 9.5, letterSpacing: 0.9, color: '#9FD3DF' },
   content: { padding: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six },
   stats: { fontFamily: Fonts.medium, fontSize: 12.5 },
+  discussion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 12,
+  },
+  discussionText: { flex: 1, fontFamily: Fonts.semibold, fontSize: 13.5 },
   label: { fontFamily: Fonts.medium, fontSize: 12.5, letterSpacing: 0.3 },
   group: { gap: Spacing.one },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },

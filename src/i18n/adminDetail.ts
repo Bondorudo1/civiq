@@ -97,6 +97,24 @@ const ro = {
   deleteNotificationBody: 'Dispare din lista tuturor locuitorilor. Acțiunea nu poate fi anulată.',
   deleteNotificationFailed: 'Nu am putut șterge anunțul.',
   deleteNotification: 'Șterge anunțul',
+
+  // admin/comments/[postId] — discussion moderation.
+  discussionBar: 'Discuția',
+  discussionCount: (n: number): string => `${n} ${n === 1 ? 'comentariu' : 'comentarii'}`,
+  moderateDiscussion: (n: number): string => `Moderează discuția (${n})`,
+  officialChip: 'RĂSPUNS OFICIAL',
+  reply: 'Răspunde',
+  replyingTo: (name: string) => `Răspunzi lui ${name}`,
+  commentPlaceholder: 'Scrie un răspuns oficial…',
+  sendComment: 'Trimite comentariul',
+  sendCommentFailed: 'Nu am putut trimite comentariul.',
+  deleteCommentTitle: 'Ștergi comentariul?',
+  deleteCommentRootBody: 'Se șterg și toate răspunsurile la el. Acțiunea nu poate fi anulată.',
+  deleteCommentReplyBody: 'Acțiunea nu poate fi anulată.',
+  deleteCommentFailed: 'Nu am putut șterge comentariul.',
+  discussionClosed: 'Consultarea e închisă — comentarii noi nu se mai pot adăuga, dar moderarea rămâne activă.',
+  discussionEmpty: 'Niciun comentariu încă.',
+  discussionLoading: 'Se încarcă discuția…',
 };
 
 export const adminDetailText: Slice<typeof ro> = {
@@ -189,5 +207,23 @@ export const adminDetailText: Slice<typeof ro> = {
     deleteNotificationBody: 'Оно исчезнет из списка у всех жителей. Отменить действие нельзя.',
     deleteNotificationFailed: 'Не удалось удалить объявление.',
     deleteNotification: 'Удалить объявление',
+
+    discussionBar: 'Обсуждение',
+    discussionCount: (n: number): string =>
+      `${n} ${ruPlural(n, 'комментарий', 'комментария', 'комментариев')}`,
+    moderateDiscussion: (n: number): string => `Модерация обсуждения (${n})`,
+    officialChip: 'ОФИЦИАЛЬНЫЙ ОТВЕТ',
+    reply: 'Ответить',
+    replyingTo: (name: string) => `Отвечаете: ${name}`,
+    commentPlaceholder: 'Напишите официальный ответ…',
+    sendComment: 'Отправить комментарий',
+    sendCommentFailed: 'Не удалось отправить комментарий.',
+    deleteCommentTitle: 'Удалить комментарий?',
+    deleteCommentRootBody: 'Будут удалены и все ответы на него. Действие необратимо.',
+    deleteCommentReplyBody: 'Действие необратимо.',
+    deleteCommentFailed: 'Не удалось удалить комментарий.',
+    discussionClosed: 'Консультация закрыта — новые комментарии недоступны, но модерация работает.',
+    discussionEmpty: 'Комментариев пока нет.',
+    discussionLoading: 'Загрузка обсуждения…',
   },
 };
