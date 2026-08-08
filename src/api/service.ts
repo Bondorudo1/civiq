@@ -86,14 +86,17 @@ const mockApi = {
   },
 
   getMe: (): Promise<User> => delay(activeRole === 'ADMIN' ? mockAdmin : mockUser),
-  getPosts: (): Promise<Post[]> => delay(mockPosts),
+  // List getters return fresh arrays, as a real API returns fresh JSON. Handing
+  // out the module array itself means React Query sees an unchanged reference
+  // after a mutation unshifts into it, and the list never re-renders.
+  getPosts: (): Promise<Post[]> => delay([...mockPosts]),
   getPost: (id: string): Promise<Post | undefined> => delay(mockPosts.find((p) => p.id === id)),
   /** Root comments with nested one-level replies (API returns replies inline). */
-  getComments: (postId: string): Promise<Comment[]> => delay(mockComments[postId] ?? []),
-  getComplaints: (): Promise<Complaint[]> => delay(mockComplaints),
+  getComments: (postId: string): Promise<Comment[]> => delay([...(mockComments[postId] ?? [])]),
+  getComplaints: (): Promise<Complaint[]> => delay([...mockComplaints]),
   getComplaint: (id: string): Promise<Complaint | undefined> =>
     delay(mockComplaints.find((c) => c.id === id)),
-  getNotifications: (): Promise<Notification[]> => delay(mockNotifications),
+  getNotifications: (): Promise<Notification[]> => delay([...mockNotifications]),
   getUnreadCount: (): Promise<number> => delay(mockNotifications.filter((n) => !n.isRead).length),
   /** Real API: POST /notifications/:id/read → 204, idempotent. */
   markNotificationRead: (id: string): Promise<void> => {
