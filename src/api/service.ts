@@ -1,7 +1,7 @@
 /**
- * Data-access service. Currently backed by mock data; when the backend is ready
- * (API Rev 2 at http://localhost:8000/api) flip USE_MOCK to false and implement
- * the real fetch calls behind the same function signatures + snake_case mapping.
+ * Data-access service. Backed by the real API (`live.ts`) against
+ * EXPO_PUBLIC_API_URL. Flip USE_MOCK back to true to demo without a backend —
+ * both implementations share the same signatures, so nothing else changes.
  */
 
 import { liveApi } from './live';
@@ -36,7 +36,7 @@ import type {
   VerificationRequest,
 } from './types';
 
-export const USE_MOCK = true;
+export const USE_MOCK = false;
 
 const delay = <T>(data: T, ms = 250): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(data), ms));
@@ -597,4 +597,6 @@ export const api: typeof mockApi = USE_MOCK
   ? AI_LIVE
     ? { ...mockApi, ...liveAi }
     : mockApi
-  : liveApi;
+  : // Full live too routes a chat turn through /ai/ask: the backend has no
+    // /ai/chat endpoint yet, and liveApi's raw chatWithBot would 404 against it.
+    { ...liveApi, chatWithBot: liveAi.chatWithBot };
