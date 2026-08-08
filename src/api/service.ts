@@ -200,6 +200,8 @@ const mockApi = {
     category: ComplaintCategory;
     address?: string | null;
     photoUrl?: string | null;
+    /** The picker's real mime type; the live upload declares it on the file part. */
+    photoMime?: string | null;
   }): Promise<Complaint> => {
     const now = new Date().toISOString();
     const created: Complaint = {

@@ -6,6 +6,8 @@
  * `{ code, message, fields }` error envelope.
  */
 
+import { Platform } from 'react-native';
+
 import type { ApiError } from './types';
 
 /**
@@ -100,6 +102,25 @@ export async function send<T>(
   );
 }
 
+const EXT_BY_MIME: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+
+/**
+ * A filename with a real extension: Android content:// URIs end in an opaque id,
+ * and a data: uri's "last segment" is the whole base64 payload — megabytes of it,
+ * inside a multipart header. Derive the extension from the mime type instead.
+ */
+function fileName(uri: string, mime: string): string {
+  const ext = EXT_BY_MIME[mime] ?? 'jpg';
+  if (uri.startsWith('data:')) return `photo.${ext}`;
+  const last = (uri.split('/').pop() ?? 'upload').split(/[?#]/)[0];
+  if (last.length > 0 && last.length <= 100 && /\.[a-z0-9]{2,5}$/i.test(last)) return last;
+  return `photo.${ext}`;
+}
+
 /** Complaints and posts take multipart because they carry an image. */
 export async function sendForm<T>(
   method: 'POST' | 'PATCH',
@@ -112,13 +133,18 @@ export async function sendForm<T>(
     if (v !== undefined && v !== null && v !== '') form.append(camelToSnake(k), String(v));
   }
   if (file) {
-    const name = file.uri.split('/').pop() ?? 'upload.jpg';
-    // RN's FormData takes this shape for files; the cast keeps TS's DOM types happy.
-    form.append(file.field, {
-      uri: file.uri,
-      name,
-      type: file.mimeType ?? 'image/jpeg',
-    } as unknown as Blob);
+    const mime = file.mimeType ?? 'image/jpeg';
+    const name = fileName(file.uri, mime);
+    if (Platform.OS === 'web') {
+      // The browser's FormData needs a real Blob — appending RN's {uri,name,type}
+      // object stringifies it to "[object Object]" and the server never gets a file.
+      // The picker's blob:/data: uri is fetchable locally.
+      const blob = await (await fetch(file.uri)).blob();
+      form.append(file.field, new File([blob], name, { type: blob.type || mime }));
+    } else {
+      // RN's FormData takes this shape for files; the cast keeps TS's DOM types happy.
+      form.append(file.field, { uri: file.uri, name, type: mime } as unknown as Blob);
+    }
   }
   return parse<T>(await fetch(buildUrl(path), { method, headers: headers(), body: form }));
 }

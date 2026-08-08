@@ -92,6 +92,7 @@ export const liveApi = {
     category: ComplaintCategory;
     address?: string | null;
     photoUrl?: string | null;
+    photoMime?: string | null;
   }): Promise<Complaint> =>
     sendForm(
       'POST',
@@ -102,7 +103,9 @@ export const liveApi = {
         category: input.category,
         address: input.address,
       },
-      input.photoUrl ? { field: 'photo', uri: input.photoUrl } : null,
+      input.photoUrl
+        ? { field: 'photo', uri: input.photoUrl, mimeType: input.photoMime ?? undefined }
+        : null,
     ),
 
   // --- Notifications ---

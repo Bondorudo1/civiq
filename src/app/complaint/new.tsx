@@ -37,7 +37,7 @@ export default function NewComplaintScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<{ uri: string; mimeType?: string } | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,7 +61,7 @@ export default function NewComplaintScreen() {
       return;
     }
     setError(null);
-    setPhoto(asset.uri);
+    setPhoto({ uri: asset.uri, mimeType: asset.mimeType });
   };
 
   const submit = () => {
@@ -73,7 +73,8 @@ export default function NewComplaintScreen() {
         description: description.trim(),
         category,
         address: needsLocation && address.trim() ? address.trim() : null,
-        photoUrl: photo,
+        photoUrl: photo?.uri ?? null,
+        photoMime: photo?.mimeType ?? null,
       },
       {
         onSuccess: () => setSubmitted(true),
@@ -224,7 +225,7 @@ export default function NewComplaintScreen() {
           <Text style={[styles.label, { color: c.textSecondary }]}>{t.photoLabel}</Text>
           {photo ? (
             <View style={styles.photoWrap}>
-              <Image source={{ uri: photo }} style={styles.photo} contentFit="cover" />
+              <Image source={{ uri: photo.uri }} style={styles.photo} contentFit="cover" />
               <Pressable onPress={() => setPhoto(null)} style={[styles.photoRemove, { backgroundColor: c.surface }]}>
                 <Ionicons name="close" size={16} color={c.text} />
               </Pressable>
